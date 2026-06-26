@@ -278,7 +278,7 @@ function fromRow(r) {
 async function loadData() {
   document.getElementById('lastUpdate').textContent = '数据加载中…';
   try {
-    const res = await fetch(REST + '?select=*&order=created_at.desc', { headers: HEADERS });
+    const res = await fetch(REST + '?select=*&order=apply_date.desc.nullslast,created_at.desc', { headers: HEADERS });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
     orders = rows.map(fromRow);
@@ -336,7 +336,7 @@ function renderTable() {
       <td class="text-right">¥${Number(o.installFee||0).toLocaleString()}</td>
       <td class="text-right">¥${Number(o.packageFee||0).toLocaleString()}</td>
       <td class="text-right col-commission">¥${Number(o.commission||0).toLocaleString()}</td>
-      <td class="text-right">${Number(o.commissionRate||0)}%</td>
+      <td class="text-right">${((Number(o.commissionRate)||0)*100).toFixed(2)}%</td>
       <td class="font-mono" style="font-size:11px">${esc(o.idCard||'')}</td>
       <td style="white-space:normal;max-width:240px;font-size:12px">${esc(o.address||'')}</td>
       <td style="white-space:nowrap">
@@ -369,7 +369,7 @@ function openModal(idx) {
     f_carrier.value=o.carrier||'联通'; f_package.value=o.package||'300M';
     f_duration.value=o.duration||'1年'; f_installFee.value=o.installFee||'';
     f_packageFee.value=o.packageFee||''; f_commission.value=o.commission||'';
-    f_commissionRate.value=o.commissionRate||''; f_idCard.value=o.idCard||'';
+    f_commissionRate.value=o.commissionRate ? (o.commissionRate*100).toFixed(2) : ''; f_idCard.value=o.idCard||'';
     f_address.value=o.address||'';
   } else {
     f_applyDate.value=new Date().toISOString().slice(0,10);
@@ -389,8 +389,8 @@ async function saveOrder() {
   const name=f_name.value.trim(), phone=f_phone.value.trim(), pkgFee=Number(f_packageFee.value)||0;
   if(!name||!phone||!pkgFee){alert('请填写姓名、手机号和套餐费');return}
   const commission=Number(f_commission.value)||0;
-  let rate=Number(f_commissionRate.value);
-  if(!rate && pkgFee>0) rate=Math.round(commission/pkgFee*100);
+  let ratePct=Number(f_commissionRate.value);
+  let rate = ratePct ? ratePct/100 : (pkgFee>0 ? commission/pkgFee : 0);
   const order={
     applyDate:f_applyDate.value, paybackDate:f_paybackDate.value,
     name, phone, province:f_province.value.trim(), city:f_city.value.trim(),
@@ -446,7 +446,7 @@ async function deleteOrder(i){
 
 function exportCSV(){
   const h='序号,办理日期,回款日期,姓名,手机号,省份,城市,运营商,套餐,时限,安装费,套餐费,佣金,佣金率,身份证号,地址\n';
-  const rows=orders.map((o,i)=>[i+1,o.applyDate,o.paybackDate,o.name,o.phone,o.province,o.city,o.carrier,o.package,o.duration,o.installFee,o.packageFee,o.commission,o.commissionRate+'%',o.idCard,o.address].map(v=>`"${v||''}"`).join(',')).join('\n');
+  const rows=orders.map((o,i)=>[i+1,o.applyDate,o.paybackDate,o.name,o.phone,o.province,o.city,o.carrier,o.package,o.duration,o.installFee,o.packageFee,o.commission,((Number(o.commissionRate)||0)*100).toFixed(2)+'%',o.idCard,o.address].map(v=>`"${v||''}"`).join(',')).join('\n');
   const blob=new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='销售订单_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
