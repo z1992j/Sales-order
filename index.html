@@ -15,14 +15,27 @@
   .stat-card{background:#fff;border-radius:10px;padding:14px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
   .stat-card .label{font-size:11px;color:#6b7280}
   .stat-card .value{font-size:20px;font-weight:700;color:#1e40af;margin-top:3px}
-  .toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:12px auto;max-width:1600px;padding:0 16px}
-  .search-box{display:flex;align-items:center;background:#fff;border-radius:8px;padding:0 12px;border:1px solid #e5e7eb;flex:1;max-width:320px}
+  .toolbar{display:flex;flex-direction:column;gap:10px;margin:12px auto;max-width:1600px;padding:0 16px}
+  .tb-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%}
+  .tb-row-main{padding-bottom:2px}
+  .tb-row-filters{padding:8px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .tb-row-filters .ctrl{border-color:transparent;background:#f9fafb;min-width:120px}
+  .tb-row-filters .ctrl:hover{border-color:#e5e7eb;background:#fff}
+  .tb-row-filters .ctrl:focus{background:#fff;border-color:#3b82f6}
+  .tb-row-time{justify-content:space-between}
+  .tb-actions{display:flex;gap:8px;flex-shrink:0}
+  .tb-actions-secondary .btn{font-size:12px}
+  .search-box{display:flex;align-items:center;background:#fff;border-radius:8px;padding:0 12px;border:1px solid #e5e7eb;flex:1;min-width:200px}
   .search-box input{border:none;outline:none;padding:9px 8px;font-size:13px;width:100%;background:transparent}
   .ctrl{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px 30px 8px 12px;font-size:13px;color:#374151;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 10px center;transition:.15s}
   .ctrl:hover{border-color:#cbd5e1}
   .ctrl:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
   .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:.15s}
   .btn-primary{background:#1e40af;color:#fff}.btn-primary:hover{background:#1e3a8a}
+  .btn-smart{background:linear-gradient(135deg,#059669,#10b981);color:#fff}
+  .btn-smart:hover{background:linear-gradient(135deg,#047857,#059669)}
+  .btn-ghost{background:transparent;color:#374151;border:1px solid #e5e7eb}
+  .btn-ghost:hover{background:#f3f4f6;border-color:#cbd5e1}
   .btn-sm{padding:5px 12px;font-size:12px;border-radius:6px;margin-right:4px}
   .btn-sm:last-child{margin-right:0}
   .btn-danger{background:#fee2e2;color:#dc2626}.btn-danger:hover{background:#fca5a5}
@@ -56,7 +69,6 @@
   .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
   .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
   .total-row td{background:#f0f9ff;font-weight:700;border-top:2px solid #bfdbfe}
-  .btn-smart{background:linear-gradient(135deg,#059669,#10b981);color:#fff}.btn-smart:hover{background:linear-gradient(135deg,#047857,#059669)}
   .paste-area{width:100%;min-height:160px;padding:12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;line-height:1.7;font-family:inherit;outline:none;resize:vertical;transition:.15s}
   .paste-area:focus{border-color:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.15)}
   .parse-hint{font-size:12px;color:#6b7280;margin-top:8px;line-height:1.6}
@@ -113,7 +125,7 @@
   .col-sales{font-weight:500;color:#6366f1}
 
   /* --- Time range filter pills --- */
-  .time-filter{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;width:100%}
+  .time-filter{display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex:1;min-width:0}
   .time-filter .pill-group{display:flex;gap:0;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb}
   .time-filter .pill{padding:6px 14px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:#fff;color:#374151;transition:.15s;white-space:nowrap}
   .time-filter .pill:not(:last-child){border-right:1px solid #e5e7eb}
@@ -161,10 +173,15 @@
     .stats{grid-template-columns:1fr 1fr;gap:8px;padding:0 12px}
     .stat-card{padding:10px 14px}
     .stat-card .value{font-size:17px}
-    .toolbar{flex-direction:column;align-items:stretch;padding:0 12px}
+    .toolbar{flex-direction:column;align-items:stretch;padding:0 12px;gap:8px}
     .search-box{max-width:100%}
-    .toolbar>div{flex-direction:column;width:100%}
-    .toolbar>div>select,.toolbar>div>button{width:100%}
+    .tb-row{flex-direction:column;align-items:stretch;gap:8px}
+    .tb-row-filters{padding:8px}
+    .tb-row-filters .ctrl{min-width:0;width:100%}
+    .tb-actions,.tb-actions-secondary{flex-wrap:wrap;gap:6px}
+    .tb-actions .btn,.tb-actions-secondary .btn{flex:1;min-width:100px;justify-content:center}
+    .time-filter{flex-direction:column;align-items:stretch;gap:8px}
+    .time-filter .pill-group{flex-wrap:wrap}
     .form-grid{grid-template-columns:1fr}
     .form-group.span2,.form-group.span3{grid-column:1/-1}
     .table-wrap{padding:0 8px}
@@ -211,11 +228,19 @@
 <div class="leaderboard-wrap" id="leaderboardWrap" style="display:none"></div>
 
 <div class="toolbar">
-  <div class="search-box">
-    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="text" id="searchInput" placeholder="搜索姓名、手机、城市、套餐…" oninput="renderTable()">
+  <!-- Row 1: 搜索 + 主操作 -->
+  <div class="tb-row tb-row-main">
+    <div class="search-box">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="搜索姓名、手机、城市、套餐…" oninput="renderTable()">
+    </div>
+    <div class="tb-actions">
+      <button class="btn btn-smart" onclick="openSmartModal()">&#9889; 智能录入</button>
+      <button class="btn btn-primary" onclick="openModal()">+ 新增订单</button>
+    </div>
   </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+  <!-- Row 2: 全部下拉筛选器 -->
+  <div class="tb-row tb-row-filters">
     <select class="ctrl" id="filterCarrier" onchange="renderTable()">
       <option value="">全部运营商</option>
       <option value="联通">联通</option>
@@ -243,27 +268,28 @@
       <option value="commissionRate_asc">佣金率 ↑</option>
     </select>
   </div>
-  <div class="time-filter" id="timeFilter">
-    <div class="pill-group">
-      <button class="pill" data-range="today" onclick="setTimeRange('today')">今天</button>
-      <button class="pill" data-range="week" onclick="setTimeRange('week')">本周</button>
-      <button class="pill" data-range="month" onclick="setTimeRange('month')">本月</button>
-      <button class="pill" data-range="lastMonth" onclick="setTimeRange('lastMonth')">上月</button>
-      <button class="pill" data-range="year" onclick="setTimeRange('year')">本年</button>
-      <button class="pill active" data-range="all" onclick="setTimeRange('all')">全部</button>
+  <!-- Row 3: 时间范围 + 次级操作 -->
+  <div class="tb-row tb-row-time">
+    <div class="time-filter" id="timeFilter">
+      <div class="pill-group">
+        <button class="pill" data-range="today" onclick="setTimeRange('today')">今天</button>
+        <button class="pill" data-range="week" onclick="setTimeRange('week')">本周</button>
+        <button class="pill" data-range="month" onclick="setTimeRange('month')">本月</button>
+        <button class="pill" data-range="lastMonth" onclick="setTimeRange('lastMonth')">上月</button>
+        <button class="pill" data-range="year" onclick="setTimeRange('year')">本年</button>
+        <button class="pill active" data-range="all" onclick="setTimeRange('all')">全部</button>
+      </div>
+      <div class="date-range">
+        <input type="date" id="dateFrom" class="ctrl" style="padding:6px 10px;font-size:12px;background-image:none" onchange="onCustomDateChange()">
+        <span>至</span>
+        <input type="date" id="dateTo" class="ctrl" style="padding:6px 10px;font-size:12px;background-image:none" onchange="onCustomDateChange()">
+      </div>
     </div>
-    <div class="date-range">
-      <input type="date" id="dateFrom" class="ctrl" style="padding:6px 10px;font-size:12px;background-image:none" onchange="onCustomDateChange()">
-      <span>至</span>
-      <input type="date" id="dateTo" class="ctrl" style="padding:6px 10px;font-size:12px;background-image:none" onchange="onCustomDateChange()">
+    <div class="tb-actions tb-actions-secondary">
+      <button class="btn btn-ghost" onclick="exportCSV()">⬇ 导出 CSV</button>
+      <button class="btn btn-ghost" onclick="triggerCSVImport()">⬆ 导入 CSV</button>
+      <button class="btn btn-ghost" onclick="openLogViewer()">📋 操作日志</button>
     </div>
-  </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn btn-smart" onclick="openSmartModal()">&#9889; 智能录入</button>
-    <button class="btn btn-primary" onclick="openModal()">+ 新增订单</button>
-    <button class="btn btn-cancel" onclick="exportCSV()">导出 CSV</button>
-    <button class="btn btn-cancel" onclick="triggerCSVImport()">导入 CSV</button>
-    <button class="btn btn-cancel" onclick="openLogViewer()">&#128203; 操作日志</button>
   </div>
 </div>
 
