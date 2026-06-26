@@ -6,7 +6,7 @@
 <title>销售订单登记</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans SC",sans-serif;background:#f0f2f5;color:#1f2937;font-size:14px}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;background:#f0f2f5;color:#1f2937;font-size:14px;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
   .header{background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:24px 32px 18px}
   .header h1{font-size:22px;font-weight:600}
   .header p{font-size:12px;opacity:.8;margin-top:3px}
@@ -20,14 +20,15 @@
   .search-box input{border:none;outline:none;padding:9px 8px;font-size:13px;width:100%;background:transparent}
   .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:.15s}
   .btn-primary{background:#1e40af;color:#fff}.btn-primary:hover{background:#1e3a8a}
-  .btn-sm{padding:4px 10px;font-size:11px;border-radius:6px}
+  .btn-sm{padding:5px 12px;font-size:12px;border-radius:6px;margin-right:4px}
+  .btn-sm:last-child{margin-right:0}
   .btn-danger{background:#fee2e2;color:#dc2626}.btn-danger:hover{background:#fca5a5}
   .btn-cancel{background:#f3f4f6;color:#374151}
   .table-wrap{max-width:1600px;margin:0 auto 32px;padding:0 16px;overflow-x:auto}
   table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);font-size:13px}
   thead{background:#f9fafb}
-  th{padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:#6b7280;white-space:nowrap}
-  td{padding:9px 12px;border-top:1px solid #f3f4f6;vertical-align:top}
+  th{padding:11px 12px;text-align:left;font-size:12px;font-weight:600;color:#6b7280;white-space:nowrap;letter-spacing:.02em}
+  td{padding:11px 12px;border-top:1px solid #f3f4f6;vertical-align:middle;font-size:13px;line-height:1.5;color:#1f2937}
   td.nowrap{white-space:nowrap}
   tr:hover td{background:#f8fafc}
   .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500}
@@ -36,7 +37,7 @@
   .badge-telecom{background:#fef9c3;color:#ca8a04}
   .empty{text-align:center;padding:48px 16px;color:#9ca3af}
   .text-right{text-align:right}
-  .font-mono{font-family:"SF Mono",Consolas,"Courier New",monospace;font-size:12px}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
   .col-name{font-weight:600;color:#111827}
   .col-commission{color:#16a34a;font-weight:600}
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
@@ -328,7 +329,7 @@ function renderTable() {
       <td class="nowrap">${esc(o.applyDate)}</td>
       <td class="nowrap">${esc(o.paybackDate||'-')}</td>
       <td class="col-name nowrap">${esc(o.name)}</td>
-      <td class="font-mono nowrap">${esc(o.phone)}</td>
+      <td class="nowrap">${esc(o.phone)}</td>
       <td class="nowrap">${esc(o.province)}</td>
       <td class="nowrap">${esc(o.city)}</td>
       <td class="nowrap"><span class="badge ${carrierBadge(o.carrier)}">${esc(o.carrier)}</span></td>
@@ -338,8 +339,8 @@ function renderTable() {
       <td class="text-right nowrap">¥${Number(o.packageFee||0).toLocaleString()}</td>
       <td class="text-right col-commission nowrap">¥${Number(o.commission||0).toLocaleString()}</td>
       <td class="text-right nowrap">${((Number(o.commissionRate)||0)*100).toFixed(2)}%</td>
-      <td class="font-mono nowrap" style="font-size:12px">${esc(o.idCard||'')}</td>
-      <td style="white-space:normal;min-width:220px;max-width:300px;font-size:13px;line-height:1.5">${esc(o.address||'')}</td>
+      <td class="nowrap" style="letter-spacing:.3px">${esc(o.idCard||'')}</td>
+      <td style="white-space:normal;min-width:220px;max-width:300px">${esc(o.address||'')}</td>
       <td class="nowrap">
         <button class="btn btn-sm btn-cancel" onclick="editOrder(${ri})">编辑</button>
         <button class="btn btn-sm btn-danger" onclick="deleteOrder(${ri})">删除</button>
