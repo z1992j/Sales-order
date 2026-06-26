@@ -78,6 +78,10 @@
       <span id="salesPersonBadge" style="background:rgba(255,255,255,.2);padding:4px 12px;border-radius:999px;font-size:13px;font-weight:500"></span>
       <select id="salesPersonSwitcher" onchange="switchSalesPerson(this.value)" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:5px 10px;border-radius:6px;font-size:13px;cursor:pointer;outline:none">
       </select>
+      <button id="copyLinkBtn" onclick="copySalesPersonLink()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;outline:none;transition:.15s;display:inline-flex;align-items:center;gap:4px">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span id="copyLinkLabel">复制链接</span>
+      </button>
     </div>
     <p id="lastUpdate">数据加载中…</p>
   </div>
@@ -384,6 +388,35 @@ function switchSalesPerson(newPerson) {
   const url = new URL(location.href);
   url.searchParams.set('user', newPerson);
   location.href = url.toString();
+}
+
+async function copySalesPersonLink() {
+  const url = new URL(location.href);
+  url.searchParams.set('user', CURRENT_SALES_PERSON);
+  // 去掉无关参数，只保留 user
+  for (const key of Array.from(url.searchParams.keys())) {
+    if (key !== 'user') url.searchParams.delete(key);
+  }
+  const link = url.toString();
+  const label = document.getElementById('copyLinkLabel');
+  const btn = document.getElementById('copyLinkBtn');
+  try {
+    await navigator.clipboard.writeText(link);
+    if (label) label.textContent = '已复制';
+    if (btn) btn.style.background = 'rgba(16,185,129,.35)';
+  } catch (e) {
+    // 降级方案：旧浏览器
+    const ta = document.createElement('textarea');
+    ta.value = link; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); if (label) label.textContent = '已复制'; if (btn) btn.style.background = 'rgba(16,185,129,.35)'; }
+    catch { if (label) label.textContent = '复制失败'; }
+    document.body.removeChild(ta);
+  }
+  setTimeout(() => {
+    if (label) label.textContent = '复制链接';
+    if (btn) btn.style.background = 'rgba(255,255,255,.15)';
+  }, 2000);
 }
 
 function carrierBadge(c) {
