@@ -221,14 +221,73 @@
 </div>
 
 <script>
+const SUPABASE_URL = 'https://cgieubqhafwwprwzerty.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_EDGkPqT_UPcwDD_n3ozuHA_mw_EL0hY';
+const REST = SUPABASE_URL + '/rest/v1/orders';
+const HEADERS = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': 'Bearer ' + SUPABASE_KEY,
+  'Content-Type': 'application/json'
+};
+
 let orders = [];
 let editingIdx = -1;
+let saving = false;
+
+function toRow(o) {
+  return {
+    apply_date:      o.applyDate || null,
+    payback_date:    o.paybackDate || null,
+    name:            o.name || '',
+    phone:           o.phone || '',
+    province:        o.province || '',
+    city:            o.city || '',
+    carrier:         o.carrier || '',
+    package:         o.package || '',
+    duration:        o.duration || '',
+    install_fee:     Number(o.installFee)     || 0,
+    package_fee:     Number(o.packageFee)     || 0,
+    commission:      Number(o.commission)     || 0,
+    commission_rate: Number(o.commissionRate) || 0,
+    id_card:         o.idCard  || '',
+    address:         o.address || ''
+  };
+}
+
+function fromRow(r) {
+  return {
+    id:             r.id,
+    applyDate:      r.apply_date || '',
+    paybackDate:    r.payback_date || '',
+    name:           r.name || '',
+    phone:          r.phone || '',
+    province:       r.province || '',
+    city:           r.city || '',
+    carrier:        r.carrier || '',
+    package:        r.package || '',
+    duration:       r.duration || '',
+    installFee:     Number(r.install_fee)     || 0,
+    packageFee:     Number(r.package_fee)     || 0,
+    commission:     Number(r.commission)      || 0,
+    commissionRate: Number(r.commission_rate) || 0,
+    idCard:         r.id_card || '',
+    address:        r.address || ''
+  };
+}
 
 async function loadData() {
+  document.getElementById('lastUpdate').textContent = '数据加载中…';
   try {
-    const res = await fetch('orders.json?t=' + Date.now());
-    orders = await res.json();
-  } catch { orders = []; }
+    const res = await fetch(REST + '?select=*&order=created_at.desc', { headers: HEADERS });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    orders = rows.map(fromRow);
+  } catch (e) {
+    orders = [];
+    document.getElementById('lastUpdate').textContent = '加载失败：' + e.message + ' (请检查网络)';
+    renderStats(); renderTable();
+    return;
+  }
   renderStats();
   renderTable();
   document.getElementById('lastUpdate').textContent = '共 ' + orders.length + ' 条记录 · 最后更新：' + new Date().toLocaleString('zh-CN');
@@ -325,7 +384,8 @@ function openModal(idx) {
 
 function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
 
-function saveOrder() {
+async function saveOrder() {
+  if (saving) return;
   const name=f_name.value.trim(), phone=f_phone.value.trim(), pkgFee=Number(f_packageFee.value)||0;
   if(!name||!phone||!pkgFee){alert('请填写姓名、手机号和套餐费');return}
   const commission=Number(f_commission.value)||0;
@@ -339,15 +399,49 @@ function saveOrder() {
     commission, commissionRate:rate,
     idCard:f_idCard.value.trim(), address:f_address.value.trim()
   };
-  if(editingIdx>=0) orders[editingIdx]=order; else orders.unshift(order);
-  closeModal(); renderStats(); renderTable();
+
+  saving = true;
+  try {
+    if (editingIdx >= 0) {
+      const id = orders[editingIdx].id;
+      const res = await fetch(REST + '?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: HEADERS,
+        body: JSON.stringify(toRow(order))
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
+    } else {
+      const res = await fetch(REST, {
+        method: 'POST',
+        headers: HEADERS,
+        body: JSON.stringify(toRow(order))
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
+    }
+    closeModal();
+    await loadData();
+  } catch (e) {
+    alert('保存失败：' + e.message);
+  } finally {
+    saving = false;
+  }
 }
 
 function editOrder(i){openModal(i)}
 
-function deleteOrder(i){
+async function deleteOrder(i){
   if(!confirm('确认删除该订单？'))return;
-  orders.splice(i,1); renderStats(); renderTable();
+  const id = orders[i].id;
+  try {
+    const res = await fetch(REST + '?id=eq.' + encodeURIComponent(id), {
+      method: 'DELETE',
+      headers: HEADERS
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
+    await loadData();
+  } catch (e) {
+    alert('删除失败：' + e.message);
+  }
 }
 
 function exportCSV(){
