@@ -73,7 +73,12 @@
 
 <div class="header">
   <div class="container">
-    <h1>销售订单登记</h1>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <h1>销售订单登记</h1>
+      <span id="salesPersonBadge" style="background:rgba(255,255,255,.2);padding:4px 12px;border-radius:999px;font-size:13px;font-weight:500"></span>
+      <select id="salesPersonSwitcher" onchange="switchSalesPerson(this.value)" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:5px 10px;border-radius:6px;font-size:13px;cursor:pointer;outline:none">
+      </select>
+    </div>
     <p id="lastUpdate">数据加载中…</p>
   </div>
 </div>
@@ -263,6 +268,12 @@ const HEADERS = {
   'Content-Type': 'application/json'
 };
 
+// 销售员名单（如需新增成员，在此数组追加即可）
+const SALES_TEAM = ['大卫', '格顺', '李四', '王五'];
+
+// 从 URL 参数读取当前销售员，默认 '大卫'
+const CURRENT_SALES_PERSON = (new URLSearchParams(location.search).get('user') || '大卫').trim();
+
 let orders = [];
 let editingIdx = -1;
 let saving = false;
@@ -283,7 +294,8 @@ function toRow(o) {
     commission:      Number(o.commission)     || 0,
     commission_rate: Number(o.commissionRate) || 0,
     id_card:         o.idCard  || '',
-    address:         o.address || ''
+    address:         o.address || '',
+    sales_person:    o.salesPerson || CURRENT_SALES_PERSON
   };
 }
 
@@ -304,7 +316,8 @@ function fromRow(r) {
     commission:     Number(r.commission)      || 0,
     commissionRate: Number(r.commission_rate) || 0,
     idCard:         r.id_card || '',
-    address:        r.address || ''
+    address:        r.address || '',
+    salesPerson:    r.sales_person || ''
   };
 }
 
@@ -322,28 +335,55 @@ async function loadData() {
     return;
   }
   refreshFilterOptions();
+  initSalesPersonSwitcher();
   renderStats();
   renderTable();
-  document.getElementById('lastUpdate').textContent = '共 ' + orders.length + ' 条记录 · 最后更新：' + new Date().toLocaleString('zh-CN');
+  const mineCount = orders.filter(o => o.salesPerson === CURRENT_SALES_PERSON).length;
+  document.getElementById('lastUpdate').textContent =
+    '当前用户：' + CURRENT_SALES_PERSON + ' · ' + mineCount + ' 条记录（全公司共 ' + orders.length + ' 条）· 最后更新：' + new Date().toLocaleString('zh-CN');
 }
 
 function refreshFilterOptions() {
   const sel = document.getElementById('filterProvince');
   if (!sel) return;
   const prev = sel.value;
-  const provinces = Array.from(new Set(orders.map(o => o.province).filter(Boolean))).sort();
+  const provinces = Array.from(new Set(
+    orders.filter(o => o.salesPerson === CURRENT_SALES_PERSON).map(o => o.province).filter(Boolean)
+  )).sort((a,b) => a.localeCompare(b,'zh-CN'));
   sel.innerHTML = '<option value="">全部省份</option>' +
     provinces.map(p => `<option value="${p}">${p}</option>`).join('');
   if (provinces.includes(prev)) sel.value = prev;
 }
 
 function renderStats() {
-  const total = orders.length;
-  const totalCommission = orders.reduce((s, o) => s + (Number(o.commission)||0), 0);
+  const mine = orders.filter(o => o.salesPerson === CURRENT_SALES_PERSON);
+  const total = mine.length;
+  const totalCommission = mine.reduce((s, o) => s + (Number(o.commission)||0), 0);
   document.getElementById('stats').innerHTML = [
     ['订单总数', total + ' 笔'],
     ['佣金合计', '¥' + totalCommission.toLocaleString()],
   ].map(([l,v]) => `<div class="stat-card"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
+}
+
+function initSalesPersonSwitcher() {
+  const sel = document.getElementById('salesPersonSwitcher');
+  if (!sel) return;
+  // 合并固定名单 + 数据库中已有的人员，去重后排序
+  const allPersons = Array.from(new Set([
+    ...SALES_TEAM,
+    ...orders.map(o => o.salesPerson).filter(Boolean)
+  ])).sort((a, b) => a.localeCompare(b, 'zh-CN'));
+  sel.innerHTML = allPersons.map(p =>
+    `<option value="${p}" ${p === CURRENT_SALES_PERSON ? 'selected' : ''}>${p}</option>`
+  ).join('');
+  const badge = document.getElementById('salesPersonBadge');
+  if (badge) badge.textContent = '当前：' + CURRENT_SALES_PERSON;
+}
+
+function switchSalesPerson(newPerson) {
+  const url = new URL(location.href);
+  url.searchParams.set('user', newPerson);
+  location.href = url.toString();
 }
 
 function carrierBadge(c) {
@@ -354,7 +394,7 @@ function carrierBadge(c) {
 
 function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-function renderTable() {
+function getFilteredOrders() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const carrierFilter = document.getElementById('filterCarrier').value;
   const provinceFilter = document.getElementById('filterProvince').value;
@@ -362,6 +402,7 @@ function renderTable() {
   const sortVal = document.getElementById('sortBy').value;
 
   let filtered = orders.filter(o => {
+    if (o.salesPerson !== CURRENT_SALES_PERSON) return false;
     if (q && !((o.name||'').toLowerCase().includes(q) || (o.phone||'').includes(q) ||
                (o.city||'').toLowerCase().includes(q) || (o.package||'').toLowerCase().includes(q) ||
                (o.province||'').toLowerCase().includes(q) || (o.carrier||'').toLowerCase().includes(q))) return false;
@@ -372,34 +413,24 @@ function renderTable() {
     return true;
   });
 
-  // 排序
   const [key, dir] = sortVal.split('_');
-  const cmp = (a, b) => {
+  filtered.sort((a, b) => {
     let va, vb;
-    if (key === 'apply') {
-      va = a.applyDate || '';
-      vb = b.applyDate || '';
-    } else if (key === 'payback') {
-      va = a.paybackDate || '';
-      vb = b.paybackDate || '';
-    } else if (key === 'commission') {
-      va = Number(a.commission) || 0;
-      vb = Number(b.commission) || 0;
-    } else if (key === 'packageFee') {
-      va = Number(a.packageFee) || 0;
-      vb = Number(b.packageFee) || 0;
-    } else if (key === 'commissionRate') {
-      va = Number(a.commissionRate) || 0;
-      vb = Number(b.commissionRate) || 0;
-    } else {
-      return 0;
-    }
+    if (key === 'apply')        { va = a.applyDate || ''; vb = b.applyDate || ''; }
+    else if (key === 'payback') { va = a.paybackDate || ''; vb = b.paybackDate || ''; }
+    else if (key === 'commission') { va = Number(a.commission)||0; vb = Number(b.commission)||0; }
+    else if (key === 'packageFee') { va = Number(a.packageFee)||0; vb = Number(b.packageFee)||0; }
+    else if (key === 'commissionRate') { va = Number(a.commissionRate)||0; vb = Number(b.commissionRate)||0; }
+    else return 0;
     if (va < vb) return dir === 'asc' ? -1 : 1;
     if (va > vb) return dir === 'asc' ? 1 : -1;
     return 0;
-  };
-  filtered.sort(cmp);
+  });
+  return filtered;
+}
 
+function renderTable() {
+  const filtered = getFilteredOrders();
   const tbody = document.getElementById('tableBody');
   document.getElementById('emptyMsg').style.display = filtered.length ? 'none' : 'block';
 
@@ -481,7 +512,8 @@ async function saveOrder() {
     carrier:f_carrier.value, package:f_package.value, duration:f_duration.value,
     installFee:Number(f_installFee.value)||0, packageFee:pkgFee,
     commission, commissionRate:rate,
-    idCard:f_idCard.value.trim(), address:f_address.value.trim()
+    idCard:f_idCard.value.trim(), address:f_address.value.trim(),
+    salesPerson: editingIdx >= 0 ? orders[editingIdx].salesPerson : CURRENT_SALES_PERSON
   };
 
   saving = true;
@@ -529,11 +561,12 @@ async function deleteOrder(i){
 }
 
 function exportCSV(){
+  const list = getFilteredOrders();
   const h='序号,办理日期,回款日期,姓名,手机号,省份,城市,运营商,套餐,时限,安装费,套餐费,佣金,佣金率,身份证号,地址\n';
-  const rows=orders.map((o,i)=>[i+1,o.applyDate,o.paybackDate,o.name,o.phone,o.province,o.city,o.carrier,o.package,o.duration,o.installFee,o.packageFee,o.commission,Math.round((Number(o.commissionRate)||0)*100)+'%',o.idCard,o.address].map(v=>`"${v||''}"`).join(',')).join('\n');
+  const rows=list.map((o,i)=>[i+1,o.applyDate,o.paybackDate,o.name,o.phone,o.province,o.city,o.carrier,o.package,o.duration,o.installFee,o.packageFee,o.commission,Math.round((Number(o.commissionRate)||0)*100)+'%',o.idCard,o.address].map(v=>`"${v||''}"`).join(',')).join('\n');
   const blob=new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='销售订单_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  a.download=CURRENT_SALES_PERSON+'_销售订单_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
 }
 
 loadData();
