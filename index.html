@@ -66,7 +66,126 @@
   .extracted-fields .field-value{color:#111827;font-weight:500}
   .field-highlight{animation:hlFade .8s ease}
   @keyframes hlFade{0%{background:#fef9c3}100%{background:transparent}}
-  @media(max-width:768px){.form-grid{grid-template-columns:1fr 1fr}.form-group.span3{grid-column:1/-1}.stats{grid-template-columns:1fr 1fr}}
+  /* --- Unpaid row highlighting --- */
+  tr.unpaid-row td{background:#fef2f2}
+  tr.unpaid-row td:first-child{border-left:3px solid #ef4444}
+  tr.unpaid-row:hover td{background:#fee2e2}
+
+  /* --- Warning banner --- */
+  .unpaid-banner{display:none;background:#fef9c3;border:1px solid #fde047;color:#92400e;padding:10px 18px;border-radius:8px;margin:10px auto;max-width:1600px;font-size:13px;font-weight:500}
+  .unpaid-banner.visible{display:block}
+
+  /* --- Stat card variants --- */
+  .stat-card.warn .value{color:#dc2626}
+  .stat-card .sub-row{display:flex;gap:6px;margin-top:6px;align-items:center}
+  .carrier-bar-wrap{display:flex;gap:4px;align-items:center;margin-top:6px}
+  .carrier-bar-wrap .bar-label{font-size:10px;color:#6b7280;min-width:24px}
+  .carrier-bar-wrap .bar-track{flex:1;height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden}
+  .carrier-bar-wrap .bar-fill{height:100%;border-radius:3px;transition:width .3s}
+  .bar-fill-unicom{background:#3b82f6}
+  .bar-fill-mobile{background:#22c55e}
+  .bar-fill-telecom{background:#eab308}
+  .carrier-pct{font-size:10px;color:#6b7280;min-width:28px;text-align:right}
+
+  /* --- Leaderboard --- */
+  .leaderboard-wrap{max-width:1600px;margin:0 auto 12px;padding:0 16px}
+  .leaderboard-wrap h3{font-size:14px;font-weight:600;color:#374151;margin-bottom:8px}
+  .leaderboard{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);font-size:13px}
+  .leaderboard thead{background:#f0f9ff}
+  .leaderboard th{padding:10px 14px;text-align:left;font-size:12px;font-weight:600;color:#1e40af;white-space:nowrap}
+  .leaderboard td{padding:10px 14px;border-top:1px solid #f3f4f6;font-size:13px;color:#1f2937}
+  .leaderboard tr:hover td{background:#f8fafc}
+  .leaderboard .rank{font-weight:700;color:#1e40af;width:36px;text-align:center}
+
+  /* --- Row detail modal (mobile) --- */
+  .detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:16px}
+  .detail-overlay.active{display:flex}
+  .detail-card{background:#fff;border-radius:12px;padding:20px;width:100%;max-width:420px;max-height:85vh;overflow-y:auto}
+  .detail-card h3{font-size:16px;font-weight:600;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+  .detail-card .close-btn{background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;padding:4px 8px}
+  .detail-card .close-btn:hover{color:#1f2937}
+  .detail-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f3f4f6;font-size:13px}
+  .detail-row:last-child{border-bottom:none}
+  .detail-row .dl{color:#6b7280;flex-shrink:0;margin-right:12px}
+  .detail-row .dv{color:#1f2937;font-weight:500;text-align:right;word-break:break-all}
+
+  /* --- Sales person column (ALL mode) --- */
+  .col-sales{font-weight:500;color:#6366f1}
+
+  /* --- Time range filter pills --- */
+  .time-filter{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;width:100%}
+  .time-filter .pill-group{display:flex;gap:0;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb}
+  .time-filter .pill{padding:6px 14px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:#fff;color:#374151;transition:.15s;white-space:nowrap}
+  .time-filter .pill:not(:last-child){border-right:1px solid #e5e7eb}
+  .time-filter .pill:hover{background:#f0f9ff}
+  .time-filter .pill.active{background:#1e40af;color:#fff}
+  .time-filter .date-range{display:flex;gap:6px;align-items:center}
+  .time-filter .date-range span{font-size:12px;color:#6b7280}
+  .time-filter .date-range input[type="date"]{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-size:12px;color:#374151;outline:none;cursor:pointer;transition:.15s}
+  .time-filter .date-range input[type="date"]:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+
+  /* --- CSV import preview --- */
+  .csv-preview-table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
+  .csv-preview-table th,.csv-preview-table td{padding:6px 8px;border:1px solid #e5e7eb;text-align:left}
+  .csv-preview-table th{background:#f9fafb;font-weight:600;color:#6b7280}
+  .csv-preview-table td{color:#1f2937}
+  .csv-import-info{font-size:13px;color:#374151;margin:8px 0}
+  .csv-import-info strong{color:#1e40af}
+
+  /* --- Operation log viewer --- */
+  .log-list{max-height:60vh;overflow-y:auto}
+  .log-item{padding:10px 14px;border-bottom:1px solid #f3f4f6;font-size:13px}
+  .log-item:last-child{border-bottom:none}
+  .log-item .log-header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .log-item .log-time{font-size:11px;color:#9ca3af;white-space:nowrap}
+  .log-item .log-action{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px}
+  .log-action-insert{background:#dcfce7;color:#16a34a}
+  .log-action-update{background:#dbeafe;color:#2563eb}
+  .log-action-delete{background:#fee2e2;color:#dc2626}
+  .log-item .log-name{font-weight:500;color:#111827}
+  .log-item details{margin-top:6px;font-size:12px}
+  .log-item details summary{cursor:pointer;color:#6b7280;font-size:12px}
+  .log-item details summary:hover{color:#3b82f6}
+  .log-diff{margin-top:4px;padding:8px;background:#f9fafb;border-radius:6px;font-size:12px}
+  .log-diff-row{display:flex;gap:8px;padding:2px 0}
+  .log-diff-field{color:#6b7280;min-width:80px;flex-shrink:0}
+  .log-diff-old{color:#dc2626;text-decoration:line-through}
+  .log-diff-new{color:#16a34a}
+  .log-diff-arrow{color:#9ca3af}
+  .log-empty{text-align:center;padding:32px 16px;color:#9ca3af;font-size:13px}
+
+  /* --- Mobile responsive --- */
+  @media(max-width:768px){
+    .header{padding:16px}
+    .header h1{font-size:18px}
+    .stats{grid-template-columns:1fr 1fr;gap:8px;padding:0 12px}
+    .stat-card{padding:10px 14px}
+    .stat-card .value{font-size:17px}
+    .toolbar{flex-direction:column;align-items:stretch;padding:0 12px}
+    .search-box{max-width:100%}
+    .toolbar>div{flex-direction:column;width:100%}
+    .toolbar>div>select,.toolbar>div>button{width:100%}
+    .form-grid{grid-template-columns:1fr}
+    .form-group.span2,.form-group.span3{grid-column:1/-1}
+    .table-wrap{padding:0 8px}
+    /* Hide secondary columns on mobile */
+    table th:nth-child(2),table td:nth-child(2),
+    table th:nth-child(3),table td:nth-child(3),
+    table th:nth-child(6),table td:nth-child(6),
+    table th:nth-child(7),table td:nth-child(7),
+    table th:nth-child(10),table td:nth-child(10),
+    table th:nth-child(11),table td:nth-child(11),
+    table th:nth-child(12),table td:nth-child(12),
+    table th:nth-child(14),table td:nth-child(14),
+    table th:nth-child(15),table td:nth-child(15),
+    table th:nth-child(16),table td:nth-child(16),
+    table th:nth-child(17).th-sales,table td:nth-child(17).col-sales{display:none}
+    /* Make visible rows tappable */
+    tr[data-idx]{cursor:pointer}
+    .leaderboard-wrap{padding:0 12px}
+    .unpaid-banner{margin:8px 12px;font-size:12px}
+    .modal{width:98%;padding:16px}
+  }
 </style>
 </head>
 <body>
@@ -88,6 +207,8 @@
 </div>
 
 <div class="stats" id="stats"></div>
+<div class="unpaid-banner" id="unpaidBanner"></div>
+<div class="leaderboard-wrap" id="leaderboardWrap" style="display:none"></div>
 
 <div class="toolbar">
   <div class="search-box">
@@ -122,10 +243,27 @@
       <option value="commissionRate_asc">佣金率 ↑</option>
     </select>
   </div>
-  <div style="display:flex;gap:8px;">
+  <div class="time-filter" id="timeFilter">
+    <div class="pill-group">
+      <button class="pill" data-range="today" onclick="setTimeRange('today')">今天</button>
+      <button class="pill" data-range="week" onclick="setTimeRange('week')">本周</button>
+      <button class="pill" data-range="month" onclick="setTimeRange('month')">本月</button>
+      <button class="pill" data-range="lastMonth" onclick="setTimeRange('lastMonth')">上月</button>
+      <button class="pill" data-range="year" onclick="setTimeRange('year')">本年</button>
+      <button class="pill active" data-range="all" onclick="setTimeRange('all')">全部</button>
+    </div>
+    <div class="date-range">
+      <input type="date" id="dateFrom" class="ctrl" style="padding:6px 10px;font-size:12px;background-image:none" onchange="onCustomDateChange()">
+      <span>至</span>
+      <input type="date" id="dateTo" class="ctrl" style="padding:6px 10px;font-size:12px;background-image:none" onchange="onCustomDateChange()">
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn btn-smart" onclick="openSmartModal()">&#9889; 智能录入</button>
     <button class="btn btn-primary" onclick="openModal()">+ 新增订单</button>
     <button class="btn btn-cancel" onclick="exportCSV()">导出 CSV</button>
+    <button class="btn btn-cancel" onclick="triggerCSVImport()">导入 CSV</button>
+    <button class="btn btn-cancel" onclick="openLogViewer()">&#128203; 操作日志</button>
   </div>
 </div>
 
@@ -149,6 +287,7 @@
         <th class="text-right">佣金率</th>
         <th>身份证号</th>
         <th>地址</th>
+        <th class="th-sales" style="display:none">销售员</th>
         <th>操作</th>
       </tr>
     </thead>
@@ -262,6 +401,35 @@
   </div>
 </div>
 
+<div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="detail-card" id="detailCard"></div>
+</div>
+
+<input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVFile(this)">
+
+<div class="modal-overlay" id="csvImportOverlay" onclick="if(event.target===this)closeCSVImport()">
+  <div class="modal">
+    <h2>CSV 批量导入</h2>
+    <div id="csvImportContent"></div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeCSVImport()">取消</button>
+      <button class="btn btn-primary" id="csvConfirmBtn" onclick="confirmCSVImport()" disabled>确认导入</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="logOverlay" onclick="if(event.target===this)closeLogViewer()">
+  <div class="modal" style="max-width:720px">
+    <h2 style="display:flex;justify-content:space-between;align-items:center">
+      &#128203; 操作日志
+      <button class="btn btn-cancel" onclick="closeLogViewer()" style="font-size:12px;padding:4px 12px">关闭</button>
+    </h2>
+    <div id="logContent" class="log-list">
+      <div class="log-empty">加载中…</div>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://cgieubqhafwwprwzerty.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_EDGkPqT_UPcwDD_n3ozuHA_mw_EL0hY';
@@ -351,8 +519,9 @@ function refreshFilterOptions() {
   const sel = document.getElementById('filterProvince');
   if (!sel) return;
   const prev = sel.value;
+  const isAll = CURRENT_SALES_PERSON === 'ALL';
   const provinces = Array.from(new Set(
-    orders.filter(o => o.salesPerson === CURRENT_SALES_PERSON).map(o => o.province).filter(Boolean)
+    orders.filter(o => isAll || o.salesPerson === CURRENT_SALES_PERSON).map(o => o.province).filter(Boolean)
   )).sort((a,b) => a.localeCompare(b,'zh-CN'));
   sel.innerHTML = '<option value="">全部省份</option>' +
     provinces.map(p => `<option value="${p}">${p}</option>`).join('');
@@ -360,13 +529,71 @@ function refreshFilterOptions() {
 }
 
 function renderStats() {
-  const mine = orders.filter(o => o.salesPerson === CURRENT_SALES_PERSON);
+  const isAll = CURRENT_SALES_PERSON === 'ALL';
+  const mine = isAll ? orders : orders.filter(o => o.salesPerson === CURRENT_SALES_PERSON);
   const total = mine.length;
   const totalCommission = mine.reduce((s, o) => s + (Number(o.commission)||0), 0);
+
+  // This month new orders
+  const now = new Date();
+  const ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const monthNew = mine.filter(o => o.applyDate && o.applyDate.startsWith(ym)).length;
+
+  // Unpaid count and amount
+  const unpaid = mine.filter(o => !o.paybackDate);
+  const unpaidCount = unpaid.length;
+  const unpaidAmount = unpaid.reduce((s, o) => s + (Number(o.packageFee)||0), 0);
+
+  // Carrier distribution
+  const carrierCounts = { '联通': 0, '移动': 0, '电信': 0 };
+  mine.forEach(o => { if (carrierCounts.hasOwnProperty(o.carrier)) carrierCounts[o.carrier]++; });
+  const carrierTotal = total || 1;
+  const carrierBars = [
+    ['联通', carrierCounts['联通'], 'bar-fill-unicom'],
+    ['移动', carrierCounts['移动'], 'bar-fill-mobile'],
+    ['电信', carrierCounts['电信'], 'bar-fill-telecom'],
+  ].map(([name, cnt, cls]) => {
+    const pct = Math.round(cnt / carrierTotal * 100);
+    return '<div class="carrier-bar-wrap">' +
+      '<span class="bar-label">' + name + '</span>' +
+      '<div class="bar-track"><div class="bar-fill ' + cls + '" style="width:' + pct + '%"></div></div>' +
+      '<span class="carrier-pct">' + pct + '%</span></div>';
+  }).join('');
+
   document.getElementById('stats').innerHTML = [
-    ['订单总数', total + ' 笔'],
-    ['佣金合计', '¥' + totalCommission.toLocaleString()],
-  ].map(([l,v]) => `<div class="stat-card"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
+    { label: '订单总数', value: total + ' 笔', cls: '' },
+    { label: '佣金合计', value: '\u00a5' + totalCommission.toLocaleString(), cls: '' },
+    { label: '本月新增', value: monthNew + ' 笔', cls: '' },
+    { label: '未回款', value: unpaidCount + ' 笔', cls: unpaidCount > 0 ? ' warn' : '' },
+    { label: '运营商占比', value: '', cls: '', custom: carrierBars },
+  ].map(c => {
+    const valHtml = c.custom ? c.custom : '<div class="value">' + c.value + '</div>';
+    return '<div class="stat-card' + c.cls + '"><div class="label">' + c.label + '</div>' + valHtml + '</div>';
+  }).join('');
+
+  // Warning banner
+  const banner = document.getElementById('unpaidBanner');
+  if (banner) {
+    if (unpaidCount > 0) {
+      const who = isAll ? '团队' : '您';
+      banner.textContent = '\u26a0\ufe0f ' + who + '有 ' + unpaidCount + ' 笔订单未回款，合计金额 \u00a5' + unpaidAmount.toLocaleString();
+      banner.classList.add('visible');
+    } else {
+      banner.classList.remove('visible');
+    }
+  }
+
+  // Leaderboard for ALL mode
+  const lbWrap = document.getElementById('leaderboardWrap');
+  if (lbWrap) {
+    if (isAll) {
+      lbWrap.style.display = '';
+      renderLeaderboard();
+    } else {
+      lbWrap.style.display = 'none';
+      lbWrap.innerHTML = '';
+    }
+  }
 }
 
 function initSalesPersonSwitcher() {
@@ -377,11 +604,13 @@ function initSalesPersonSwitcher() {
     ...SALES_TEAM,
     ...orders.map(o => o.salesPerson).filter(Boolean)
   ])).sort((a, b) => a.localeCompare(b, 'zh-CN'));
-  sel.innerHTML = allPersons.map(p =>
-    `<option value="${p}" ${p === CURRENT_SALES_PERSON ? 'selected' : ''}>${p}</option>`
+  sel.innerHTML =
+    '<option value="ALL" ' + (CURRENT_SALES_PERSON === 'ALL' ? 'selected' : '') + '>\u{1F465} 全部成员</option>' +
+    allPersons.map(p =>
+    '<option value="' + p + '" ' + (p === CURRENT_SALES_PERSON ? 'selected' : '') + '>' + p + '</option>'
   ).join('');
   const badge = document.getElementById('salesPersonBadge');
-  if (badge) badge.textContent = '当前：' + CURRENT_SALES_PERSON;
+  if (badge) badge.textContent = '当前：' + (CURRENT_SALES_PERSON === 'ALL' ? '全部成员' : CURRENT_SALES_PERSON);
 }
 
 function switchSalesPerson(newPerson) {
@@ -433,9 +662,12 @@ function getFilteredOrders() {
   const provinceFilter = document.getElementById('filterProvince').value;
   const paybackFilter = document.getElementById('filterPayback').value;
   const sortVal = document.getElementById('sortBy').value;
+  const dateFrom = (document.getElementById('dateFrom')||{}).value || '';
+  const dateTo = (document.getElementById('dateTo')||{}).value || '';
+  const isAll = CURRENT_SALES_PERSON === 'ALL';
 
   let filtered = orders.filter(o => {
-    if (o.salesPerson !== CURRENT_SALES_PERSON) return false;
+    if (!isAll && o.salesPerson !== CURRENT_SALES_PERSON) return false;
     if (q && !((o.name||'').toLowerCase().includes(q) || (o.phone||'').includes(q) ||
                (o.city||'').toLowerCase().includes(q) || (o.package||'').toLowerCase().includes(q) ||
                (o.province||'').toLowerCase().includes(q) || (o.carrier||'').toLowerCase().includes(q))) return false;
@@ -443,6 +675,8 @@ function getFilteredOrders() {
     if (provinceFilter && o.province !== provinceFilter) return false;
     if (paybackFilter === 'paid' && !o.paybackDate) return false;
     if (paybackFilter === 'unpaid' && o.paybackDate) return false;
+    if (dateFrom && (!o.applyDate || o.applyDate < dateFrom)) return false;
+    if (dateTo && (!o.applyDate || o.applyDate > dateTo)) return false;
     return true;
   });
 
@@ -465,44 +699,53 @@ function getFilteredOrders() {
 function renderTable() {
   const filtered = getFilteredOrders();
   const tbody = document.getElementById('tableBody');
+  const isAll = CURRENT_SALES_PERSON === 'ALL';
   document.getElementById('emptyMsg').style.display = filtered.length ? 'none' : 'block';
+
+  // Show/hide sales person column header
+  const salesHeaders = document.querySelectorAll('.th-sales');
+  salesHeaders.forEach(th => th.style.display = isAll ? '' : 'none');
 
   tbody.innerHTML = filtered.map((o, i) => {
     const ri = orders.indexOf(o);
-    return `<tr>
-      <td class="nowrap">${ri+1}</td>
-      <td class="nowrap">${esc(o.applyDate)}</td>
-      <td class="nowrap">${esc(o.paybackDate||'-')}</td>
-      <td class="col-name nowrap">${esc(o.name)}</td>
-      <td class="nowrap">${esc(o.phone)}</td>
-      <td class="nowrap">${esc(o.province)}</td>
-      <td class="nowrap">${esc(o.city)}</td>
-      <td class="nowrap"><span class="badge ${carrierBadge(o.carrier)}">${esc(o.carrier)}</span></td>
-      <td class="nowrap">${esc(o.package)}</td>
-      <td class="nowrap">${esc(o.duration)}</td>
-      <td class="text-right nowrap">¥${Number(o.installFee||0).toLocaleString()}</td>
-      <td class="text-right nowrap">¥${Number(o.packageFee||0).toLocaleString()}</td>
-      <td class="text-right col-commission nowrap">¥${Number(o.commission||0).toLocaleString()}</td>
-      <td class="text-right nowrap">${Math.round((Number(o.commissionRate)||0)*100)}%</td>
-      <td class="nowrap" style="letter-spacing:.3px">${esc(o.idCard||'')}</td>
-      <td style="white-space:normal;min-width:220px;max-width:300px">${esc(o.address||'')}</td>
-      <td class="nowrap">
-        <button class="btn btn-sm btn-cancel" onclick="editOrder(${ri})">编辑</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteOrder(${ri})">删除</button>
-      </td>
-    </tr>`;
+    const unpaidCls = !o.paybackDate ? ' unpaid-row' : '';
+    return '<tr class="' + unpaidCls.trim() + '" data-idx="' + ri + '" onclick="showRowDetail(' + ri + ')">' +
+      '<td class="nowrap">' + (ri+1) + '</td>' +
+      '<td class="nowrap">' + esc(o.applyDate) + '</td>' +
+      '<td class="nowrap">' + esc(o.paybackDate||'-') + '</td>' +
+      '<td class="col-name nowrap">' + esc(o.name) + '</td>' +
+      '<td class="nowrap">' + esc(o.phone) + '</td>' +
+      '<td class="nowrap">' + esc(o.province) + '</td>' +
+      '<td class="nowrap">' + esc(o.city) + '</td>' +
+      '<td class="nowrap"><span class="badge ' + carrierBadge(o.carrier) + '">' + esc(o.carrier) + '</span></td>' +
+      '<td class="nowrap">' + esc(o.package) + '</td>' +
+      '<td class="nowrap">' + esc(o.duration) + '</td>' +
+      '<td class="text-right nowrap">\u00a5' + Number(o.installFee||0).toLocaleString() + '</td>' +
+      '<td class="text-right nowrap">\u00a5' + Number(o.packageFee||0).toLocaleString() + '</td>' +
+      '<td class="text-right col-commission nowrap">\u00a5' + Number(o.commission||0).toLocaleString() + '</td>' +
+      '<td class="text-right nowrap">' + Math.round((Number(o.commissionRate)||0)*100) + '%</td>' +
+      '<td class="nowrap" style="letter-spacing:.3px">' + esc(o.idCard||'') + '</td>' +
+      '<td style="white-space:normal;min-width:220px;max-width:300px">' + esc(o.address||'') + '</td>' +
+      (isAll ? '<td class="nowrap col-sales">' + esc(o.salesPerson||'') + '</td>' : '') +
+      '<td class="nowrap" onclick="event.stopPropagation()">' +
+        '<button class="btn btn-sm btn-cancel" onclick="editOrder(' + ri + ')">编辑</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="deleteOrder(' + ri + ')">删除</button>' +
+      '</td>' +
+    '</tr>';
   }).join('');
 
   const sumInstall = filtered.reduce((s,o)=>s+(Number(o.installFee)||0),0);
   const sumPkg = filtered.reduce((s,o)=>s+(Number(o.packageFee)||0),0);
   const sumCom = filtered.reduce((s,o)=>s+(Number(o.commission)||0),0);
-  document.getElementById('totalRow').innerHTML = `<tr class="total-row">
-    <td colspan="10">合计 (${filtered.length}笔)</td>
-    <td class="text-right">¥${sumInstall.toLocaleString()}</td>
-    <td class="text-right">¥${sumPkg.toLocaleString()}</td>
-    <td class="text-right col-commission">¥${sumCom.toLocaleString()}</td>
-    <td colspan="4"></td>
-  </tr>`;
+  const baseCols = isAll ? 11 : 10;
+  const tailCols = isAll ? 5 : 4;
+  document.getElementById('totalRow').innerHTML = '<tr class="total-row">' +
+    '<td colspan="' + baseCols + '">合计 (' + filtered.length + '笔)</td>' +
+    '<td class="text-right">\u00a5' + sumInstall.toLocaleString() + '</td>' +
+    '<td class="text-right">\u00a5' + sumPkg.toLocaleString() + '</td>' +
+    '<td class="text-right col-commission">\u00a5' + sumCom.toLocaleString() + '</td>' +
+    '<td colspan="' + tailCols + '"></td>' +
+  '</tr>';
 }
 
 function openModal(idx) {
@@ -764,6 +1007,287 @@ function parseAndFill() {
     closeSmartModal();
     document.getElementById('modalOverlay').classList.add('active');
   }, 1200);
+}
+
+function renderLeaderboard() {
+  const wrap = document.getElementById('leaderboardWrap');
+  if (!wrap) return;
+
+  // Group orders by salesPerson
+  const groups = {};
+  orders.forEach(o => {
+    const sp = o.salesPerson || '未知';
+    if (!groups[sp]) groups[sp] = [];
+    groups[sp].push(o);
+  });
+
+  // Build rows
+  const rows = Object.keys(groups).map(sp => {
+    const list = groups[sp];
+    const count = list.length;
+    const totalCommission = list.reduce((s, o) => s + (Number(o.commission)||0), 0);
+    const avgRate = count > 0
+      ? list.reduce((s, o) => s + (Number(o.commissionRate)||0), 0) / count
+      : 0;
+    const unpaidCount = list.filter(o => !o.paybackDate).length;
+    return { sp, count, totalCommission, avgRate, unpaidCount };
+  });
+
+  // Sort by commission desc
+  rows.sort((a, b) => b.totalCommission - a.totalCommission);
+
+  const medals = ['\ud83e\udd47', '\ud83e\udd48', '\ud83e\udd49'];
+  wrap.innerHTML = '<h3>\ud83c\udfc6 团队业绩榜</h3>' +
+    '<table class="leaderboard"><thead><tr>' +
+    '<th>排名</th><th>姓名</th><th>订单数</th><th>佣金合计</th><th>平均佣金率</th><th>未回款</th>' +
+    '</tr></thead><tbody>' +
+    rows.map((r, i) =>
+      '<tr>' +
+      '<td class="rank">' + (i < 3 ? medals[i] : (i+1)) + '</td>' +
+      '<td>' + esc(r.sp) + '</td>' +
+      '<td>' + r.count + ' 笔</td>' +
+      '<td style="color:#16a34a;font-weight:600">\u00a5' + r.totalCommission.toLocaleString() + '</td>' +
+      '<td>' + Math.round(r.avgRate * 100) + '%</td>' +
+      '<td style="' + (r.unpaidCount > 0 ? 'color:#dc2626;font-weight:600' : '') + '">' + r.unpaidCount + '</td>' +
+    '</tr>'
+    ).join('') +
+    '</tbody></table>';
+}
+
+function showRowDetail(idx) {
+  const o = orders[idx];
+  if (!o) return;
+  const card = document.getElementById('detailCard');
+  const fields = [
+    ['办理日期', o.applyDate || '-'],
+    ['回款日期', o.paybackDate || '未回款'],
+    ['姓名', o.name],
+    ['手机号', o.phone],
+    ['省份', o.province],
+    ['城市', o.city],
+    ['运营商', o.carrier],
+    ['套餐', o.package],
+    ['时限', o.duration],
+    ['安装费', '\u00a5' + Number(o.installFee||0).toLocaleString()],
+    ['套餐费', '\u00a5' + Number(o.packageFee||0).toLocaleString()],
+    ['佣金', '\u00a5' + Number(o.commission||0).toLocaleString()],
+    ['佣金率', Math.round((Number(o.commissionRate)||0)*100) + '%'],
+    ['身份证号', o.idCard || '-'],
+    ['地址', o.address || '-'],
+    ['销售员', o.salesPerson || '-'],
+  ];
+  card.innerHTML = '<h3>订单详情 <button class="close-btn" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\')">&times;</button></h3>' +
+    fields.map(function(f) {
+      return '<div class="detail-row"><span class="dl">' + f[0] + '</span><span class="dv">' + esc(f[1]) + '</span></div>';
+    }).join('') +
+    '<div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">' +
+    '<button class="btn btn-sm btn-cancel" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\');editOrder(' + idx + ')">编辑</button>' +
+    '<button class="btn btn-sm btn-danger" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\');deleteOrder(' + idx + ')">删除</button>' +
+    '</div>';
+  document.getElementById('detailOverlay').classList.add('active');
+}
+
+/* ========== 功能 4：时间范围筛选 ========== */
+function setTimeRange(range) {
+  const pills = document.querySelectorAll('.time-filter .pill');
+  pills.forEach(p => p.classList.toggle('active', p.dataset.range === range));
+  const from = document.getElementById('dateFrom');
+  const to = document.getElementById('dateTo');
+  const today = new Date();
+  const fmt = d => d.toISOString().slice(0, 10);
+
+  if (range === 'all') {
+    from.value = ''; to.value = '';
+  } else if (range === 'today') {
+    from.value = fmt(today); to.value = fmt(today);
+  } else if (range === 'week') {
+    const day = today.getDay() || 7;
+    const monday = new Date(today); monday.setDate(today.getDate() - day + 1);
+    from.value = fmt(monday); to.value = fmt(today);
+  } else if (range === 'month') {
+    from.value = fmt(new Date(today.getFullYear(), today.getMonth(), 1));
+    to.value = fmt(today);
+  } else if (range === 'lastMonth') {
+    const lmStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lmEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+    from.value = fmt(lmStart); to.value = fmt(lmEnd);
+  } else if (range === 'year') {
+    from.value = fmt(new Date(today.getFullYear(), 0, 1));
+    to.value = fmt(today);
+  }
+  renderTable();
+}
+
+function onCustomDateChange() {
+  const pills = document.querySelectorAll('.time-filter .pill');
+  pills.forEach(p => p.classList.remove('active'));
+  renderTable();
+}
+
+/* ========== 功能 3：CSV 批量导入 ========== */
+let pendingCSVRows = [];
+
+function triggerCSVImport() {
+  document.getElementById('csvFileInput').value = '';
+  document.getElementById('csvFileInput').click();
+}
+
+function handleCSVFile(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result.replace(/^\uFEFF/, '');
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) { alert('CSV 文件为空或格式不正确'); return; }
+    const parseRow = line => {
+      const cells = [];
+      let cur = '', inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') { inQ = !inQ; }
+        else if (c === ',' && !inQ) { cells.push(cur); cur = ''; }
+        else cur += c;
+      }
+      cells.push(cur);
+      return cells;
+    };
+    const header = parseRow(lines[0]);
+    const rows = lines.slice(1).map(parseRow);
+    pendingCSVRows = rows;
+
+    const preview = rows.slice(0, 5).map(r => '<tr>' + r.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>').join('');
+    document.getElementById('csvImportContent').innerHTML =
+      '<p style="margin-bottom:12px;font-size:13px">识别到 <b>' + rows.length + '</b> 条待导入记录：</p>' +
+      '<div style="overflow-x:auto;margin-bottom:12px"><table style="font-size:12px">' +
+      '<thead><tr>' + header.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr></thead>' +
+      '<tbody>' + preview + '</tbody></table></div>' +
+      (rows.length > 5 ? '<p style="font-size:12px;color:#6b7280">… 还有 ' + (rows.length - 5) + ' 条未显示</p>' : '') +
+      '<p style="font-size:12px;color:#dc2626;margin-top:8px">提示：若与现有记录重复（按 手机号+办理日期 判断）将自动跳过</p>';
+    document.getElementById('csvConfirmBtn').disabled = false;
+    document.getElementById('csvImportOverlay').classList.add('active');
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function closeCSVImport() {
+  document.getElementById('csvImportOverlay').classList.remove('active');
+  pendingCSVRows = [];
+}
+
+async function confirmCSVImport() {
+  const btn = document.getElementById('csvConfirmBtn');
+  btn.disabled = true;
+  btn.textContent = '导入中…';
+
+  const existingKeys = new Set(orders.filter(o => o.phone && o.applyDate).map(o => o.phone + '|' + o.applyDate));
+  const newRows = [];
+  for (const cells of pendingCSVRows) {
+    const [_, applyDate, paybackDate, name, phone, province, city, carrier, pkg, duration,
+           installFee, packageFee, commission, commissionRate, idCard, address] = cells;
+    if (!name || !phone) continue;
+    const key = phone.trim() + '|' + (applyDate || '').slice(0, 10);
+    if (existingKeys.has(key)) continue;
+    existingKeys.add(key);
+
+    const rateStr = (commissionRate || '').replace('%', '').trim();
+    const rateNum = Number(rateStr) || 0;
+    newRows.push({
+      apply_date:      (applyDate || '').slice(0, 10) || null,
+      payback_date:    (paybackDate || '').slice(0, 10) || null,
+      name: name.trim(), phone: phone.trim(),
+      province: (province || '').trim(), city: (city || '').trim(),
+      carrier: (carrier || '').trim(), package: (pkg || '').trim(),
+      duration: (duration || '').trim(),
+      install_fee:     Number(installFee) || 0,
+      package_fee:     Number(packageFee) || 0,
+      commission:      Number(commission) || 0,
+      commission_rate: rateNum >= 1 ? rateNum / 100 : rateNum,
+      id_card: (idCard || '').trim(),
+      address: (address || '').trim(),
+      sales_person: CURRENT_SALES_PERSON === 'ALL' ? '未分配' : CURRENT_SALES_PERSON
+    });
+  }
+
+  let imported = 0, failed = 0;
+  for (const row of newRows) {
+    try {
+      const res = await fetch(REST, { method: 'POST', headers: HEADERS, body: JSON.stringify(row) });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      imported++;
+    } catch { failed++; }
+  }
+  closeCSVImport();
+  await loadData();
+  alert('导入完成：成功 ' + imported + ' 条' + (failed ? '，失败 ' + failed + ' 条' : '') +
+        (pendingCSVRows.length - newRows.length > 0 ? '，跳过重复 ' + (pendingCSVRows.length - newRows.length) + ' 条' : ''));
+}
+
+/* ========== 功能 7：操作日志 ========== */
+function openLogViewer() {
+  document.getElementById('logContent').innerHTML = '<div class="log-empty">加载中…</div>';
+  document.getElementById('logOverlay').classList.add('active');
+  const url = SUPABASE_URL + '/rest/v1/order_logs?select=*&order=created_at.desc&limit=50' +
+    (CURRENT_SALES_PERSON !== 'ALL' ? '&actor=eq.' + encodeURIComponent(CURRENT_SALES_PERSON) : '');
+  fetch(url, { headers: HEADERS })
+    .then(r => r.json())
+    .then(rows => {
+      if (!rows || rows.length === 0) {
+        document.getElementById('logContent').innerHTML = '<div class="log-empty">暂无操作日志</div>';
+        return;
+      }
+      document.getElementById('logContent').innerHTML = rows.map(renderLogRow).join('');
+    })
+    .catch(err => {
+      document.getElementById('logContent').innerHTML =
+        '<div class="log-empty" style="color:#dc2626">加载失败：' + err.message + '（确认已在 SQL Editor 执行 order_logs 表建表脚本）</div>';
+    });
+}
+
+function closeLogViewer() {
+  document.getElementById('logOverlay').classList.remove('active');
+}
+
+const FIELD_ZH = {
+  apply_date: '办理日期', payback_date: '回款日期', name: '姓名', phone: '手机号',
+  province: '省份', city: '城市', carrier: '运营商', package: '套餐', duration: '时限',
+  install_fee: '安装费', package_fee: '套餐费', commission: '佣金',
+  commission_rate: '佣金率', id_card: '身份证号', address: '地址', sales_person: '销售员'
+};
+
+function renderLogRow(row) {
+  const time = row.created_at ? new Date(row.created_at).toLocaleString('zh-CN') : '';
+  const actionLabel = { insert: '➕ 新增', update: '✏️ 修改', delete: '❌ 删除' }[row.action] || row.action;
+  const personName = (row.new_data && row.new_data.name) || (row.old_data && row.old_data.name) || '—';
+  const fields = row.changed_fields || [];
+
+  let details = '';
+  if (row.action === 'update' && fields.length && row.old_data && row.new_data) {
+    details = '<details style="margin-top:6px;font-size:12px">' +
+      '<summary style="cursor:pointer;color:#3b82f6">查看字段变更</summary>' +
+      '<div style="padding:8px;background:#f9fafb;border-radius:6px;margin-top:4px">' +
+      fields.map(f => {
+        const zh = FIELD_ZH[f] || f;
+        const old = row.old_data[f] ?? '';
+        const nw = row.new_data[f] ?? '';
+        return '<div style="padding:2px 0"><b>' + zh + '</b>：<span style="color:#dc2626;text-decoration:line-through">' + esc(String(old)) + '</span> → <span style="color:#16a34a">' + esc(String(nw)) + '</span></div>';
+      }).join('') +
+      '</div></details>';
+  } else if (row.action === 'delete' && row.old_data) {
+    details = '<div style="margin-top:6px;font-size:12px;color:#6b7280">删除前：' +
+      esc(row.old_data.name || '') + ' / ' + esc(row.old_data.phone || '') + '</div>';
+  }
+
+  return '<div class="log-item" style="padding:12px;border-bottom:1px solid #f3f4f6">' +
+    '<div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7280">' +
+      '<span>' + actionLabel + ' · ' + esc(row.actor || '未知') + '</span>' +
+      '<span>' + time + '</span>' +
+    '</div>' +
+    '<div style="margin-top:4px;font-size:13px"><b>' + esc(personName) + '</b>' +
+      (fields.length ? ' 修改了 ' + fields.length + ' 个字段' : '') +
+    '</div>' +
+    details +
+    '</div>';
 }
 </script>
 </body>
