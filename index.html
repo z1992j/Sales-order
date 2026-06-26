@@ -361,12 +361,14 @@
       </div>
       <div class="form-group">
         <label>套餐</label>
-        <select id="f_package">
-          <option value="200M">200M</option>
-          <option value="300M">300M</option>
-          <option value="500M">500M</option>
-          <option value="1000M">1000M</option>
-        </select>
+        <input type="text" id="f_package" list="packageSuggestions" placeholder="如 300m、1000M">
+        <datalist id="packageSuggestions">
+          <option value="100m"></option>
+          <option value="200m"></option>
+          <option value="300m"></option>
+          <option value="500m"></option>
+          <option value="1000m"></option>
+        </datalist>
       </div>
       <div class="form-group">
         <label>时限</label>
@@ -782,7 +784,7 @@ function openModal(idx) {
     f_applyDate.value=o.applyDate||''; f_paybackDate.value=o.paybackDate||'';
     f_name.value=o.name||''; f_phone.value=o.phone||'';
     f_province.value=o.province||''; f_city.value=o.city||'';
-    f_carrier.value=o.carrier||'联通'; f_package.value=o.package||'300M';
+    f_carrier.value=o.carrier||'联通'; f_package.value=o.package||'300m';
     f_duration.value=o.duration||'1年'; f_installFee.value=o.installFee||'';
     f_packageFee.value=o.packageFee||''; f_commission.value=o.commission||'';
     f_commissionRate.value=o.commissionRate ? Math.round(o.commissionRate*100) : ''; f_idCard.value=o.idCard||'';
@@ -791,7 +793,7 @@ function openModal(idx) {
     f_applyDate.value=new Date().toISOString().slice(0,10);
     f_paybackDate.value=''; f_name.value=''; f_phone.value='';
     f_province.value=''; f_city.value='';
-    f_carrier.value='联通'; f_package.value='300M'; f_duration.value='1年';
+    f_carrier.value='联通'; f_package.value='300m'; f_duration.value='1年';
     f_installFee.value=''; f_packageFee.value=''; f_commission.value='';
     f_commissionRate.value=''; f_idCard.value=''; f_address.value='';
   }
@@ -927,7 +929,7 @@ function extractProvinceFromContext(text) {
 function parseOrderText(text) {
   const result = {
     name:'', phone:'', idCard:'', address:'',
-    carrier:'联通', package:'300M', duration:'1年',
+    carrier:'联通', package:'300m', duration:'1年',
     packageFee:0, installFee:0, commission:0,
     province:'', city:''
   };
