@@ -10,12 +10,12 @@
   .header{background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:24px 32px 18px}
   .header h1{font-size:22px;font-weight:600}
   .header p{font-size:12px;opacity:.8;margin-top:3px}
-  .container{max-width:1400px;margin:0 auto;padding:0 16px}
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px auto;max-width:1400px;padding:0 16px}
+  .container{max-width:1600px;margin:0 auto;padding:0 16px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px auto;max-width:1600px;padding:0 16px}
   .stat-card{background:#fff;border-radius:10px;padding:14px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
   .stat-card .label{font-size:11px;color:#6b7280}
   .stat-card .value{font-size:20px;font-weight:700;color:#1e40af;margin-top:3px}
-  .toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:12px auto;max-width:1400px;padding:0 16px}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:12px auto;max-width:1600px;padding:0 16px}
   .search-box{display:flex;align-items:center;background:#fff;border-radius:8px;padding:0 12px;border:1px solid #e5e7eb;flex:1;max-width:320px}
   .search-box input{border:none;outline:none;padding:9px 8px;font-size:13px;width:100%;background:transparent}
   .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:.15s}
@@ -23,11 +23,12 @@
   .btn-sm{padding:4px 10px;font-size:11px;border-radius:6px}
   .btn-danger{background:#fee2e2;color:#dc2626}.btn-danger:hover{background:#fca5a5}
   .btn-cancel{background:#f3f4f6;color:#374151}
-  .table-wrap{max-width:1400px;margin:0 auto 32px;padding:0 16px;overflow-x:auto}
+  .table-wrap{max-width:1600px;margin:0 auto 32px;padding:0 16px;overflow-x:auto}
   table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);font-size:13px}
   thead{background:#f9fafb}
   th{padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:#6b7280;white-space:nowrap}
-  td{padding:9px 12px;border-top:1px solid #f3f4f6;white-space:nowrap}
+  td{padding:9px 12px;border-top:1px solid #f3f4f6;vertical-align:top}
+  td.nowrap{white-space:nowrap}
   tr:hover td{background:#f8fafc}
   .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500}
   .badge-unicom{background:#dbeafe;color:#2563eb}
@@ -323,23 +324,23 @@ function renderTable() {
   tbody.innerHTML = filtered.map((o, i) => {
     const ri = orders.indexOf(o);
     return `<tr>
-      <td>${ri+1}</td>
-      <td>${esc(o.applyDate)}</td>
-      <td>${esc(o.paybackDate||'-')}</td>
-      <td class="col-name">${esc(o.name)}</td>
-      <td class="font-mono">${esc(o.phone)}</td>
-      <td>${esc(o.province)}</td>
-      <td>${esc(o.city)}</td>
-      <td><span class="badge ${carrierBadge(o.carrier)}">${esc(o.carrier)}</span></td>
-      <td>${esc(o.package)}</td>
-      <td>${esc(o.duration)}</td>
-      <td class="text-right">¥${Number(o.installFee||0).toLocaleString()}</td>
-      <td class="text-right">¥${Number(o.packageFee||0).toLocaleString()}</td>
-      <td class="text-right col-commission">¥${Number(o.commission||0).toLocaleString()}</td>
-      <td class="text-right">${((Number(o.commissionRate)||0)*100).toFixed(2)}%</td>
-      <td class="font-mono" style="font-size:11px">${esc(o.idCard||'')}</td>
-      <td style="white-space:normal;max-width:240px;font-size:12px">${esc(o.address||'')}</td>
-      <td style="white-space:nowrap">
+      <td class="nowrap">${ri+1}</td>
+      <td class="nowrap">${esc(o.applyDate)}</td>
+      <td class="nowrap">${esc(o.paybackDate||'-')}</td>
+      <td class="col-name nowrap">${esc(o.name)}</td>
+      <td class="font-mono nowrap">${esc(o.phone)}</td>
+      <td class="nowrap">${esc(o.province)}</td>
+      <td class="nowrap">${esc(o.city)}</td>
+      <td class="nowrap"><span class="badge ${carrierBadge(o.carrier)}">${esc(o.carrier)}</span></td>
+      <td class="nowrap">${esc(o.package)}</td>
+      <td class="nowrap">${esc(o.duration)}</td>
+      <td class="text-right nowrap">¥${Number(o.installFee||0).toLocaleString()}</td>
+      <td class="text-right nowrap">¥${Number(o.packageFee||0).toLocaleString()}</td>
+      <td class="text-right col-commission nowrap">¥${Number(o.commission||0).toLocaleString()}</td>
+      <td class="text-right nowrap">${((Number(o.commissionRate)||0)*100).toFixed(2)}%</td>
+      <td class="font-mono nowrap" style="font-size:12px">${esc(o.idCard||'')}</td>
+      <td style="white-space:normal;min-width:220px;max-width:300px;font-size:13px;line-height:1.5">${esc(o.address||'')}</td>
+      <td class="nowrap">
         <button class="btn btn-sm btn-cancel" onclick="editOrder(${ri})">编辑</button>
         <button class="btn btn-sm btn-danger" onclick="deleteOrder(${ri})">删除</button>
       </td>
@@ -391,6 +392,7 @@ async function saveOrder() {
   const commission=Number(f_commission.value)||0;
   let ratePct=Number(f_commissionRate.value);
   let rate = ratePct ? ratePct/100 : (pkgFee>0 ? commission/pkgFee : 0);
+  rate = Math.round(rate*10000)/10000;
   const order={
     applyDate:f_applyDate.value, paybackDate:f_paybackDate.value,
     name, phone, province:f_province.value.trim(), city:f_city.value.trim(),
