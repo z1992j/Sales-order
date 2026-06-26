@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>销售订单登记</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans SC",sans-serif;background:#f0f2f5;color:#1f2937;font-size:14px}
+  .header{background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:24px 32px 18px}
+  .header h1{font-size:22px;font-weight:600}
+  .header p{font-size:12px;opacity:.8;margin-top:3px}
+  .container{max-width:1400px;margin:0 auto;padding:0 16px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px auto;max-width:1400px;padding:0 16px}
+  .stat-card{background:#fff;border-radius:10px;padding:14px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .stat-card .label{font-size:11px;color:#6b7280}
+  .stat-card .value{font-size:20px;font-weight:700;color:#1e40af;margin-top:3px}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:12px auto;max-width:1400px;padding:0 16px}
+  .search-box{display:flex;align-items:center;background:#fff;border-radius:8px;padding:0 12px;border:1px solid #e5e7eb;flex:1;max-width:320px}
+  .search-box input{border:none;outline:none;padding:9px 8px;font-size:13px;width:100%;background:transparent}
+  .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:.15s}
+  .btn-primary{background:#1e40af;color:#fff}.btn-primary:hover{background:#1e3a8a}
+  .btn-sm{padding:4px 10px;font-size:11px;border-radius:6px}
+  .btn-danger{background:#fee2e2;color:#dc2626}.btn-danger:hover{background:#fca5a5}
+  .btn-cancel{background:#f3f4f6;color:#374151}
+  .table-wrap{max-width:1400px;margin:0 auto 32px;padding:0 16px;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);font-size:13px}
+  thead{background:#f9fafb}
+  th{padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:#6b7280;white-space:nowrap}
+  td{padding:9px 12px;border-top:1px solid #f3f4f6;white-space:nowrap}
+  tr:hover td{background:#f8fafc}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500}
+  .badge-unicom{background:#dbeafe;color:#2563eb}
+  .badge-mobile{background:#dcfce7;color:#16a34a}
+  .badge-telecom{background:#fef9c3;color:#ca8a04}
+  .empty{text-align:center;padding:48px 16px;color:#9ca3af}
+  .text-right{text-align:right}
+  .font-mono{font-family:"SF Mono",Consolas,"Courier New",monospace;font-size:12px}
+  .col-name{font-weight:600;color:#111827}
+  .col-commission{color:#16a34a;font-weight:600}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+  .modal-overlay.active{display:flex}
+  .modal{background:#fff;border-radius:14px;padding:24px;width:92%;max-width:640px;max-height:90vh;overflow-y:auto}
+  .modal h2{font-size:16px;margin-bottom:16px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .form-group{display:flex;flex-direction:column}
+  .form-group.span2{grid-column:span 2}
+  .form-group.span3{grid-column:1/-1}
+  .form-group label{font-size:11px;font-weight:600;color:#374151;margin-bottom:3px}
+  .form-group input,.form-group select,.form-group textarea{padding:8px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;outline:none;transition:.15s}
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+  .total-row td{background:#f0f9ff;font-weight:700;border-top:2px solid #bfdbfe}
+  .btn-smart{background:linear-gradient(135deg,#059669,#10b981);color:#fff}.btn-smart:hover{background:linear-gradient(135deg,#047857,#059669)}
+  .paste-area{width:100%;min-height:160px;padding:12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;line-height:1.7;font-family:inherit;outline:none;resize:vertical;transition:.15s}
+  .paste-area:focus{border-color:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.15)}
+  .parse-hint{font-size:12px;color:#6b7280;margin-top:8px;line-height:1.6}
+  .extracted-fields{margin-top:16px;padding:14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:13px;display:none}
+  .extracted-fields .field-row{display:flex;gap:8px;padding:3px 0}
+  .extracted-fields .field-label{color:#6b7280;min-width:70px;flex-shrink:0}
+  .extracted-fields .field-value{color:#111827;font-weight:500}
+  .field-highlight{animation:hlFade .8s ease}
+  @keyframes hlFade{0%{background:#fef9c3}100%{background:transparent}}
+  @media(max-width:768px){.form-grid{grid-template-columns:1fr 1fr}.form-group.span3{grid-column:1/-1}.stats{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container">
+    <h1>销售订单登记</h1>
+    <p id="lastUpdate">数据加载中…</p>
+  </div>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div class="toolbar">
+  <div class="search-box">
+    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="searchInput" placeholder="搜索姓名、手机、城市、套餐…" oninput="renderTable()">
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-smart" onclick="openSmartModal()">&#9889; 智能录入</button>
+    <button class="btn btn-primary" onclick="openModal()">+ 新增订单</button>
+    <button class="btn btn-cancel" onclick="exportCSV()">导出 CSV</button>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>办理日期</th>
+        <th>回款日期</th>
+        <th>姓名</th>
+        <th>手机号</th>
+        <th>省份</th>
+        <th>城市</th>
+        <th>运营商</th>
+        <th>套餐</th>
+        <th>时限</th>
+        <th class="text-right">安装费</th>
+        <th class="text-right">套餐费</th>
+        <th class="text-right">佣金</th>
+        <th class="text-right">佣金率</th>
+        <th>身份证号</th>
+        <th>地址</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+    <tfoot id="totalRow"></tfoot>
+  </table>
+  <div class="empty" id="emptyMsg" style="display:none;">暂无订单数据</div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2 id="modalTitle">新增订单</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>办理日期 *</label>
+        <input type="date" id="f_applyDate">
+      </div>
+      <div class="form-group">
+        <label>回款日期</label>
+        <input type="date" id="f_paybackDate">
+      </div>
+      <div class="form-group">
+        <label>姓名 *</label>
+        <input id="f_name" placeholder="客户姓名">
+      </div>
+      <div class="form-group">
+        <label>手机号 *</label>
+        <input id="f_phone" placeholder="11位手机号" maxlength="11">
+      </div>
+      <div class="form-group">
+        <label>省份</label>
+        <input id="f_province" placeholder="省份">
+      </div>
+      <div class="form-group">
+        <label>城市</label>
+        <input id="f_city" placeholder="城市">
+      </div>
+      <div class="form-group">
+        <label>运营商</label>
+        <select id="f_carrier">
+          <option value="联通">联通</option>
+          <option value="移动">移动</option>
+          <option value="电信">电信</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>套餐</label>
+        <select id="f_package">
+          <option value="200M">200M</option>
+          <option value="300M">300M</option>
+          <option value="500M">500M</option>
+          <option value="1000M">1000M</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>时限</label>
+        <select id="f_duration">
+          <option value="6个月">6个月</option>
+          <option value="1年" selected>1年</option>
+          <option value="2年">2年</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>安装费</label>
+        <input type="number" id="f_installFee" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>套餐费 *</label>
+        <input type="number" id="f_packageFee" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>佣金 *</label>
+        <input type="number" id="f_commission" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>佣金率(%)</label>
+        <input type="number" id="f_commissionRate" min="0" max="100" step="1" placeholder="自动计算">
+      </div>
+      <div class="form-group span2">
+        <label>身份证号</label>
+        <input id="f_idCard" placeholder="18位身份证号" maxlength="18">
+      </div>
+      <div class="form-group span3">
+        <label>地址</label>
+        <textarea id="f_address" rows="2" placeholder="详细地址"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveOrder()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="smartOverlay" onclick="if(event.target===this)closeSmartModal()">
+  <div class="modal">
+    <h2>&#9889; 智能录入</h2>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:12px">粘贴下单信息，自动提取并填充表单</p>
+    <textarea class="paste-area" id="smartText" placeholder="粘贴订单信息，例如：
+新增以下广西宽带
+姓名：李骞
+联系方式：13768515775
+身份证：450121199210026017
+办理地址：南宁市邕宁区彰泰江景湾5栋1403
+办理套餐：电信300M，399元一年"></textarea>
+    <div class="extracted-fields" id="extractedPreview"></div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeSmartModal()">取消</button>
+      <button class="btn btn-smart" onclick="parseAndFill()">提取并填充</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let orders = [];
+let editingIdx = -1;
+
+async function loadData() {
+  try {
+    const res = await fetch('orders.json?t=' + Date.now());
+    orders = await res.json();
+  } catch { orders = []; }
+  renderStats();
+  renderTable();
+  document.getElementById('lastUpdate').textContent = '共 ' + orders.length + ' 条记录 · 最后更新：' + new Date().toLocaleString('zh-CN');
+}
+
+function renderStats() {
+  const total = orders.length;
+  const totalCommission = orders.reduce((s, o) => s + (Number(o.commission)||0), 0);
+  document.getElementById('stats').innerHTML = [
+    ['订单总数', total + ' 笔'],
+    ['佣金合计', '¥' + totalCommission.toLocaleString()],
+  ].map(([l,v]) => `<div class="stat-card"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
+}
+
+function carrierBadge(c) {
+  if (c === '联通') return 'badge-unicom';
+  if (c === '移动') return 'badge-mobile';
+  return 'badge-telecom';
+}
+
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function renderTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = orders.filter(o =>
+    !q || (o.name||'').toLowerCase().includes(q) || (o.phone||'').includes(q) ||
+    (o.city||'').toLowerCase().includes(q) || (o.package||'').toLowerCase().includes(q) ||
+    (o.province||'').toLowerCase().includes(q) || (o.carrier||'').toLowerCase().includes(q)
+  );
+  const tbody = document.getElementById('tableBody');
+  document.getElementById('emptyMsg').style.display = filtered.length ? 'none' : 'block';
+
+  tbody.innerHTML = filtered.map((o, i) => {
+    const ri = orders.indexOf(o);
+    return `<tr>
+      <td>${ri+1}</td>
+      <td>${esc(o.applyDate)}</td>
+      <td>${esc(o.paybackDate||'-')}</td>
+      <td class="col-name">${esc(o.name)}</td>
+      <td class="font-mono">${esc(o.phone)}</td>
+      <td>${esc(o.province)}</td>
+      <td>${esc(o.city)}</td>
+      <td><span class="badge ${carrierBadge(o.carrier)}">${esc(o.carrier)}</span></td>
+      <td>${esc(o.package)}</td>
+      <td>${esc(o.duration)}</td>
+      <td class="text-right">¥${Number(o.installFee||0).toLocaleString()}</td>
+      <td class="text-right">¥${Number(o.packageFee||0).toLocaleString()}</td>
+      <td class="text-right col-commission">¥${Number(o.commission||0).toLocaleString()}</td>
+      <td class="text-right">${Number(o.commissionRate||0)}%</td>
+      <td class="font-mono" style="font-size:11px">${esc(o.idCard||'')}</td>
+      <td style="white-space:normal;max-width:240px;font-size:12px">${esc(o.address||'')}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-sm btn-cancel" onclick="editOrder(${ri})">编辑</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteOrder(${ri})">删除</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const sumInstall = filtered.reduce((s,o)=>s+(Number(o.installFee)||0),0);
+  const sumPkg = filtered.reduce((s,o)=>s+(Number(o.packageFee)||0),0);
+  const sumCom = filtered.reduce((s,o)=>s+(Number(o.commission)||0),0);
+  document.getElementById('totalRow').innerHTML = `<tr class="total-row">
+    <td colspan="10">合计 (${filtered.length}笔)</td>
+    <td class="text-right">¥${sumInstall.toLocaleString()}</td>
+    <td class="text-right">¥${sumPkg.toLocaleString()}</td>
+    <td class="text-right col-commission">¥${sumCom.toLocaleString()}</td>
+    <td colspan="4"></td>
+  </tr>`;
+}
+
+function openModal(idx) {
+  editingIdx = idx ?? -1;
+  document.getElementById('modalTitle').textContent = idx != null ? '编辑订单' : '新增订单';
+  if (idx != null) {
+    const o = orders[idx];
+    f_applyDate.value=o.applyDate||''; f_paybackDate.value=o.paybackDate||'';
+    f_name.value=o.name||''; f_phone.value=o.phone||'';
+    f_province.value=o.province||''; f_city.value=o.city||'';
+    f_carrier.value=o.carrier||'联通'; f_package.value=o.package||'300M';
+    f_duration.value=o.duration||'1年'; f_installFee.value=o.installFee||'';
+    f_packageFee.value=o.packageFee||''; f_commission.value=o.commission||'';
+    f_commissionRate.value=o.commissionRate||''; f_idCard.value=o.idCard||'';
+    f_address.value=o.address||'';
+  } else {
+    f_applyDate.value=new Date().toISOString().slice(0,10);
+    f_paybackDate.value=''; f_name.value=''; f_phone.value='';
+    f_province.value=''; f_city.value='';
+    f_carrier.value='联通'; f_package.value='300M'; f_duration.value='1年';
+    f_installFee.value=''; f_packageFee.value=''; f_commission.value='';
+    f_commissionRate.value=''; f_idCard.value=''; f_address.value='';
+  }
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+
+function saveOrder() {
+  const name=f_name.value.trim(), phone=f_phone.value.trim(), pkgFee=Number(f_packageFee.value)||0;
+  if(!name||!phone||!pkgFee){alert('请填写姓名、手机号和套餐费');return}
+  const commission=Number(f_commission.value)||0;
+  let rate=Number(f_commissionRate.value);
+  if(!rate && pkgFee>0) rate=Math.round(commission/pkgFee*100);
+  const order={
+    applyDate:f_applyDate.value, paybackDate:f_paybackDate.value,
+    name, phone, province:f_province.value.trim(), city:f_city.value.trim(),
+    carrier:f_carrier.value, package:f_package.value, duration:f_duration.value,
+    installFee:Number(f_installFee.value)||0, packageFee:pkgFee,
+    commission, commissionRate:rate,
+    idCard:f_idCard.value.trim(), address:f_address.value.trim()
+  };
+  if(editingIdx>=0) orders[editingIdx]=order; else orders.unshift(order);
+  closeModal(); renderStats(); renderTable();
+}
+
+function editOrder(i){openModal(i)}
+
+function deleteOrder(i){
+  if(!confirm('确认删除该订单？'))return;
+  orders.splice(i,1); renderStats(); renderTable();
+}
+
+function exportCSV(){
+  const h='序号,办理日期,回款日期,姓名,手机号,省份,城市,运营商,套餐,时限,安装费,套餐费,佣金,佣金率,身份证号,地址\n';
+  const rows=orders.map((o,i)=>[i+1,o.applyDate,o.paybackDate,o.name,o.phone,o.province,o.city,o.carrier,o.package,o.duration,o.installFee,o.packageFee,o.commission,o.commissionRate+'%',o.idCard,o.address].map(v=>`"${v||''}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='销售订单_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+loadData();
+
+const CITY_PROVINCE_MAP = {
+  '北京':'北京','上海':'上海','天津':'天津','重庆':'重庆',
+  '广州':'广东','深圳':'广东','东莞':'广东','佛山':'广东','珠海':'广东',
+  '南京':'江苏','苏州':'江苏','无锡':'江苏','常州':'江苏',
+  '杭州':'浙江','宁波':'浙江','温州':'浙江',
+  '成都':'四川','绵阳':'四川',
+  '武汉':'湖北','宜昌':'湖北',
+  '长沙':'湖南','株洲':'湖南',
+  '南宁':'广西','柳州':'广西','桂林':'广西',
+  '海口':'海南','三亚':'海南',
+  '青岛':'山东','济南':'山东','烟台':'山东','聊城':'山东',
+  '哈尔滨':'黑龙江','大庆':'黑龙江',
+  '郑州':'河南','洛阳':'河南',
+  '石家庄':'河北','唐山':'河北',
+  '西安':'陕西','咸阳':'陕西',
+  '福州':'福建','厦门':'福建',
+  '合肥':'安徽','芜湖':'安徽',
+  '南昌':'江西','赣州':'江西',
+  '昆明':'云南','贵阳':'贵州','兰州':'甘肃','银川':'宁夏','西宁':'青海',
+  '沈阳':'辽宁','大连':'辽宁','长春':'吉林','呼和浩特':'内蒙古',
+  '拉萨':'西藏','太原':'山西','乌鲁木齐':'新疆'
+};
+
+function extractCityFromAddress(addr) {
+  if (!addr) return {city:'', province:''};
+  const cityMatch = addr.match(/(?:^|省|自治区)(.{2,3}(?:市|自治州|地区|盟))/);
+  if (cityMatch) {
+    const city = cityMatch[1].replace(/[市自治州地区盟]$/, '');
+    return {city, province: CITY_PROVINCE_MAP[city] || ''};
+  }
+  const simpleMatch = addr.match(/^(.{2,3}?)[市]/);
+  if (simpleMatch) {
+    const city = simpleMatch[1];
+    return {city, province: CITY_PROVINCE_MAP[city] || ''};
+  }
+  for (const [c, p] of Object.entries(CITY_PROVINCE_MAP)) {
+    if (addr.includes(c)) return {city: c, province: p};
+  }
+  return {city:'', province:''};
+}
+
+function extractProvinceFromContext(text) {
+  const provinces = ['北京','上海','天津','重庆','河北','山西','辽宁','吉林','黑龙江',
+    '江苏','浙江','安徽','福建','江西','山东','河南','湖北','湖南','广东','海南',
+    '四川','贵州','云南','陕西','甘肃','青海','广西','内蒙古','西藏','宁夏','新疆'];
+  for (const p of provinces) {
+    if (text.includes(p)) return p;
+  }
+  return '';
+}
+
+function parseOrderText(text) {
+  const result = {
+    name:'', phone:'', idCard:'', address:'',
+    carrier:'联通', package:'300M', duration:'1年',
+    packageFee:0, installFee:0, commission:0,
+    province:'', city:''
+  };
+  const nameMatch = text.match(/(?:姓\s*名|客户)[：:\s]+([^\n,，]+)/);
+  if (nameMatch) result.name = nameMatch[1].trim();
+
+  const phoneMatch = text.match(/(?:联系方式|手机号|电话|手机)[：:\s]*(\d{11})/);
+  if (phoneMatch) result.phone = phoneMatch[1];
+
+  const idMatch = text.match(/(?:身份证|证件号?)[：:\s]*(\d{17}[\dXx])/i);
+  if (idMatch) result.idCard = idMatch[1].toUpperCase();
+
+  const addrMatch = text.match(/(?:办理地址|地址|安装地址|装机地址)[：:\s]+([^\n]+)/);
+  if (addrMatch) {
+    result.address = addrMatch[1].trim();
+    const loc = extractCityFromAddress(result.address);
+    result.city = loc.city;
+    result.province = loc.province;
+  }
+
+  if (!result.province) {
+    result.province = extractProvinceFromContext(text);
+  }
+
+  const pkgLine = text.match(/(?:办理套餐|套餐)[：:\s]*([^\n]+)/);
+  if (pkgLine) {
+    const pkg = pkgLine[1];
+    const carrierMatch = pkg.match(/(联通|移动|电信)/);
+    if (carrierMatch) result.carrier = carrierMatch[1];
+
+    const speedMatch = pkg.match(/(\d+)\s*[Mm]/);
+    if (speedMatch) result.package = speedMatch[1] + 'M';
+
+    const feeMatch = pkg.match(/(\d+)\s*元/);
+    if (feeMatch) result.packageFee = parseInt(feeMatch[1]);
+
+    const durMatch = pkg.match(/(\d+)\s*年/);
+    if (durMatch) {
+      result.duration = durMatch[1] + '年';
+    } else if (pkg.match(/半年|6个月/)) {
+      result.duration = '6个月';
+    }
+  }
+
+  const carrierLine = text.match(/(?:运营商)[：:\s]*(联通|移动|电信)/);
+  if (carrierLine) result.carrier = carrierLine[1];
+
+  const feeMatch = text.match(/(?:安装费)[：:\s]*(\d+)/);
+  if (feeMatch) result.installFee = parseInt(feeMatch[1]);
+
+  const comMatch = text.match(/(?:佣金)[：:\s]*(\d+)/);
+  if (comMatch) result.commission = parseInt(comMatch[1]);
+
+  return result;
+}
+
+function openSmartModal() {
+  document.getElementById('smartText').value = '';
+  document.getElementById('extractedPreview').style.display = 'none';
+  document.getElementById('smartOverlay').classList.add('active');
+  setTimeout(() => document.getElementById('smartText').focus(), 100);
+}
+
+function closeSmartModal() {
+  document.getElementById('smartOverlay').classList.remove('active');
+}
+
+function parseAndFill() {
+  const text = document.getElementById('smartText').value.trim();
+  if (!text) { alert('请粘贴订单信息'); return; }
+
+  const parsed = parseOrderText(text);
+  const preview = document.getElementById('extractedPreview');
+  const fields = [
+    ['姓名', parsed.name], ['手机', parsed.phone], ['身份证', parsed.idCard],
+    ['地址', parsed.address], ['省份', parsed.province], ['城市', parsed.city],
+    ['运营商', parsed.carrier], ['套餐', parsed.package], ['时限', parsed.duration],
+    ['套餐费', parsed.packageFee ? '¥'+parsed.packageFee : ''],
+  ];
+  preview.innerHTML = fields
+    .filter(([,v]) => v)
+    .map(([l,v]) => `<div class="field-row"><span class="field-label">${l}</span><span class="field-value">${esc(v)}</span></div>`)
+    .join('');
+  preview.style.display = 'block';
+
+  f_applyDate.value = new Date().toISOString().slice(0,10);
+  f_paybackDate.value = '';
+  f_name.value = parsed.name;
+  f_phone.value = parsed.phone;
+  f_province.value = parsed.province;
+  f_city.value = parsed.city;
+  f_carrier.value = parsed.carrier;
+  f_package.value = parsed.package;
+  f_duration.value = parsed.duration;
+  f_installFee.value = parsed.installFee || '';
+  f_packageFee.value = parsed.packageFee || '';
+  f_commission.value = parsed.commission || '';
+  f_commissionRate.value = '';
+  f_idCard.value = parsed.idCard;
+  f_address.value = parsed.address;
+
+  setTimeout(() => {
+    closeSmartModal();
+    document.getElementById('modalOverlay').classList.add('active');
+  }, 1200);
+}
+</script>
+</body>
+</html>
