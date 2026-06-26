@@ -18,6 +18,9 @@
   .toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:12px auto;max-width:1600px;padding:0 16px}
   .search-box{display:flex;align-items:center;background:#fff;border-radius:8px;padding:0 12px;border:1px solid #e5e7eb;flex:1;max-width:320px}
   .search-box input{border:none;outline:none;padding:9px 8px;font-size:13px;width:100%;background:transparent}
+  .ctrl{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px 30px 8px 12px;font-size:13px;color:#374151;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 10px center;transition:.15s}
+  .ctrl:hover{border-color:#cbd5e1}
+  .ctrl:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
   .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:.15s}
   .btn-primary{background:#1e40af;color:#fff}.btn-primary:hover{background:#1e3a8a}
   .btn-sm{padding:5px 12px;font-size:12px;border-radius:6px;margin-right:4px}
@@ -81,6 +84,34 @@
   <div class="search-box">
     <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <input type="text" id="searchInput" placeholder="搜索姓名、手机、城市、套餐…" oninput="renderTable()">
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <select class="ctrl" id="filterCarrier" onchange="renderTable()">
+      <option value="">全部运营商</option>
+      <option value="联通">联通</option>
+      <option value="移动">移动</option>
+      <option value="电信">电信</option>
+    </select>
+    <select class="ctrl" id="filterProvince" onchange="renderTable()">
+      <option value="">全部省份</option>
+    </select>
+    <select class="ctrl" id="filterPayback" onchange="renderTable()">
+      <option value="">回款状态：全部</option>
+      <option value="paid">已回款</option>
+      <option value="unpaid">未回款</option>
+    </select>
+    <select class="ctrl" id="sortBy" onchange="renderTable()">
+      <option value="apply_desc">办理日期 ↓</option>
+      <option value="apply_asc">办理日期 ↑</option>
+      <option value="payback_desc">回款日期 ↓</option>
+      <option value="payback_asc">回款日期 ↑</option>
+      <option value="commission_desc">佣金 ↓</option>
+      <option value="commission_asc">佣金 ↑</option>
+      <option value="packageFee_desc">套餐费 ↓</option>
+      <option value="packageFee_asc">套餐费 ↑</option>
+      <option value="commissionRate_desc">佣金率 ↓</option>
+      <option value="commissionRate_asc">佣金率 ↑</option>
+    </select>
   </div>
   <div style="display:flex;gap:8px;">
     <button class="btn btn-smart" onclick="openSmartModal()">&#9889; 智能录入</button>
@@ -290,9 +321,20 @@ async function loadData() {
     renderStats(); renderTable();
     return;
   }
+  refreshFilterOptions();
   renderStats();
   renderTable();
   document.getElementById('lastUpdate').textContent = '共 ' + orders.length + ' 条记录 · 最后更新：' + new Date().toLocaleString('zh-CN');
+}
+
+function refreshFilterOptions() {
+  const sel = document.getElementById('filterProvince');
+  if (!sel) return;
+  const prev = sel.value;
+  const provinces = Array.from(new Set(orders.map(o => o.province).filter(Boolean))).sort();
+  sel.innerHTML = '<option value="">全部省份</option>' +
+    provinces.map(p => `<option value="${p}">${p}</option>`).join('');
+  if (provinces.includes(prev)) sel.value = prev;
 }
 
 function renderStats() {
@@ -314,11 +356,50 @@ function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.
 
 function renderTable() {
   const q = document.getElementById('searchInput').value.toLowerCase();
-  const filtered = orders.filter(o =>
-    !q || (o.name||'').toLowerCase().includes(q) || (o.phone||'').includes(q) ||
-    (o.city||'').toLowerCase().includes(q) || (o.package||'').toLowerCase().includes(q) ||
-    (o.province||'').toLowerCase().includes(q) || (o.carrier||'').toLowerCase().includes(q)
-  );
+  const carrierFilter = document.getElementById('filterCarrier').value;
+  const provinceFilter = document.getElementById('filterProvince').value;
+  const paybackFilter = document.getElementById('filterPayback').value;
+  const sortVal = document.getElementById('sortBy').value;
+
+  let filtered = orders.filter(o => {
+    if (q && !((o.name||'').toLowerCase().includes(q) || (o.phone||'').includes(q) ||
+               (o.city||'').toLowerCase().includes(q) || (o.package||'').toLowerCase().includes(q) ||
+               (o.province||'').toLowerCase().includes(q) || (o.carrier||'').toLowerCase().includes(q))) return false;
+    if (carrierFilter && o.carrier !== carrierFilter) return false;
+    if (provinceFilter && o.province !== provinceFilter) return false;
+    if (paybackFilter === 'paid' && !o.paybackDate) return false;
+    if (paybackFilter === 'unpaid' && o.paybackDate) return false;
+    return true;
+  });
+
+  // 排序
+  const [key, dir] = sortVal.split('_');
+  const cmp = (a, b) => {
+    let va, vb;
+    if (key === 'apply') {
+      va = a.applyDate || '';
+      vb = b.applyDate || '';
+    } else if (key === 'payback') {
+      va = a.paybackDate || '';
+      vb = b.paybackDate || '';
+    } else if (key === 'commission') {
+      va = Number(a.commission) || 0;
+      vb = Number(b.commission) || 0;
+    } else if (key === 'packageFee') {
+      va = Number(a.packageFee) || 0;
+      vb = Number(b.packageFee) || 0;
+    } else if (key === 'commissionRate') {
+      va = Number(a.commissionRate) || 0;
+      vb = Number(b.commissionRate) || 0;
+    } else {
+      return 0;
+    }
+    if (va < vb) return dir === 'asc' ? -1 : 1;
+    if (va > vb) return dir === 'asc' ? 1 : -1;
+    return 0;
+  };
+  filtered.sort(cmp);
+
   const tbody = document.getElementById('tableBody');
   document.getElementById('emptyMsg').style.display = filtered.length ? 'none' : 'block';
 
@@ -338,7 +419,7 @@ function renderTable() {
       <td class="text-right nowrap">¥${Number(o.installFee||0).toLocaleString()}</td>
       <td class="text-right nowrap">¥${Number(o.packageFee||0).toLocaleString()}</td>
       <td class="text-right col-commission nowrap">¥${Number(o.commission||0).toLocaleString()}</td>
-      <td class="text-right nowrap">${((Number(o.commissionRate)||0)*100).toFixed(2)}%</td>
+      <td class="text-right nowrap">${Math.round((Number(o.commissionRate)||0)*100)}%</td>
       <td class="nowrap" style="letter-spacing:.3px">${esc(o.idCard||'')}</td>
       <td style="white-space:normal;min-width:220px;max-width:300px">${esc(o.address||'')}</td>
       <td class="nowrap">
@@ -371,7 +452,7 @@ function openModal(idx) {
     f_carrier.value=o.carrier||'联通'; f_package.value=o.package||'300M';
     f_duration.value=o.duration||'1年'; f_installFee.value=o.installFee||'';
     f_packageFee.value=o.packageFee||''; f_commission.value=o.commission||'';
-    f_commissionRate.value=o.commissionRate ? (o.commissionRate*100).toFixed(2) : ''; f_idCard.value=o.idCard||'';
+    f_commissionRate.value=o.commissionRate ? Math.round(o.commissionRate*100) : ''; f_idCard.value=o.idCard||'';
     f_address.value=o.address||'';
   } else {
     f_applyDate.value=new Date().toISOString().slice(0,10);
@@ -449,7 +530,7 @@ async function deleteOrder(i){
 
 function exportCSV(){
   const h='序号,办理日期,回款日期,姓名,手机号,省份,城市,运营商,套餐,时限,安装费,套餐费,佣金,佣金率,身份证号,地址\n';
-  const rows=orders.map((o,i)=>[i+1,o.applyDate,o.paybackDate,o.name,o.phone,o.province,o.city,o.carrier,o.package,o.duration,o.installFee,o.packageFee,o.commission,((Number(o.commissionRate)||0)*100).toFixed(2)+'%',o.idCard,o.address].map(v=>`"${v||''}"`).join(',')).join('\n');
+  const rows=orders.map((o,i)=>[i+1,o.applyDate,o.paybackDate,o.name,o.phone,o.province,o.city,o.carrier,o.package,o.duration,o.installFee,o.packageFee,o.commission,Math.round((Number(o.commissionRate)||0)*100)+'%',o.idCard,o.address].map(v=>`"${v||''}"`).join(',')).join('\n');
   const blob=new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='销售订单_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
