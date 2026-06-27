@@ -185,17 +185,15 @@
     .form-grid{grid-template-columns:1fr}
     .form-group.span2,.form-group.span3{grid-column:1/-1}
     .table-wrap{padding:0 8px}
-    /* Hide secondary columns on mobile */
-    table th:nth-child(2),table td:nth-child(2),
-    table th:nth-child(3),table td:nth-child(3),
-    table th:nth-child(6),table td:nth-child(6),
-    table th:nth-child(7),table td:nth-child(7),
-    table th:nth-child(10),table td:nth-child(10),
-    table th:nth-child(11),table td:nth-child(11),
-    table th:nth-child(12),table td:nth-child(12),
-    table th:nth-child(14),table td:nth-child(14),
-    table th:nth-child(15),table td:nth-child(15),
-    table th:nth-child(16),table td:nth-child(16),
+    /* Hide secondary columns on mobile: keep 序号/姓名/手机/省份/城市/运营商/套餐/佣金 */
+    table th:nth-child(2),table td:nth-child(2),   /* 办理日期 */
+    table th:nth-child(3),table td:nth-child(3),   /* 回款日期 */
+    table th:nth-child(10),table td:nth-child(10), /* 时限 */
+    table th:nth-child(11),table td:nth-child(11), /* 安装费 */
+    table th:nth-child(12),table td:nth-child(12), /* 套餐费 */
+    table th:nth-child(14),table td:nth-child(14), /* 佣金率 */
+    table th:nth-child(15),table td:nth-child(15), /* 身份证号 */
+    table th:nth-child(16),table td:nth-child(16), /* 地址 */
     table th:nth-child(17).th-sales,table td:nth-child(17).col-sales{display:none}
     /* Make visible rows tappable */
     tr[data-idx]{cursor:pointer}
