@@ -40,6 +40,7 @@
   .btn-sm:last-child{margin-right:0}
   .btn-danger{background:#fee2e2;color:#dc2626}.btn-danger:hover{background:#fca5a5}
   .btn-cancel{background:#f3f4f6;color:#374151}
+  .btn-paid{background:#dcfce7;color:#16a34a;font-weight:600}.btn-paid:hover{background:#bbf7d0}
   .table-wrap{max-width:1600px;margin:0 auto 32px;padding:0 16px;overflow-x:auto}
   table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);font-size:13px}
   thead{background:#f9fafb}
@@ -476,6 +477,13 @@ let orders = [];
 let editingIdx = -1;
 let saving = false;
 
+// 本地日期格式化：避免 toISOString() 因 UTC 时区导致日期偏移一天
+function ymd(d) {
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+function todayStr() { return ymd(new Date()); }
+
 function toRow(o) {
   return {
     apply_date:      o.applyDate || null,
@@ -550,7 +558,7 @@ function refreshFilterOptions() {
     orders.filter(o => isAll || o.salesPerson === CURRENT_SALES_PERSON).map(o => o.province).filter(Boolean)
   )).sort((a,b) => a.localeCompare(b,'zh-CN'));
   sel.innerHTML = '<option value="">全部省份</option>' +
-    provinces.map(p => `<option value="${p}">${p}</option>`).join('');
+    provinces.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
   if (provinces.includes(prev)) sel.value = prev;
 }
 
@@ -736,7 +744,7 @@ function renderTable() {
     const ri = orders.indexOf(o);
     const unpaidCls = !o.paybackDate ? ' unpaid-row' : '';
     return '<tr class="' + unpaidCls.trim() + '" data-idx="' + ri + '" onclick="showRowDetail(' + ri + ')">' +
-      '<td class="nowrap">' + (ri+1) + '</td>' +
+      '<td class="nowrap">' + (i+1) + '</td>' +
       '<td class="nowrap">' + esc(o.applyDate) + '</td>' +
       '<td class="nowrap">' + esc(o.paybackDate||'-') + '</td>' +
       '<td class="col-name nowrap">' + esc(o.name) + '</td>' +
@@ -763,7 +771,9 @@ function renderTable() {
   const sumInstall = filtered.reduce((s,o)=>s+(Number(o.installFee)||0),0);
   const sumPkg = filtered.reduce((s,o)=>s+(Number(o.packageFee)||0),0);
   const sumCom = filtered.reduce((s,o)=>s+(Number(o.commission)||0),0);
-  const baseCols = isAll ? 11 : 10;
+  // 表头前 10 列（序号…时限）固定，其后为 安装费/套餐费/佣金 三列，
+  // 尾部为 佣金率/身份证号/地址/[销售员]/操作
+  const baseCols = 10;
   const tailCols = isAll ? 5 : 4;
   document.getElementById('totalRow').innerHTML = '<tr class="total-row">' +
     '<td colspan="' + baseCols + '">合计 (' + filtered.length + '笔)</td>' +
@@ -788,7 +798,7 @@ function openModal(idx) {
     f_commissionRate.value=o.commissionRate ? Math.round(o.commissionRate*100) : ''; f_idCard.value=o.idCard||'';
     f_address.value=o.address||'';
   } else {
-    f_applyDate.value=new Date().toISOString().slice(0,10);
+    f_applyDate.value=todayStr();
     f_paybackDate.value=''; f_name.value=''; f_phone.value='';
     f_province.value=''; f_city.value='';
     f_carrier.value='联通'; f_package.value='300m'; f_duration.value='1年';
@@ -804,6 +814,13 @@ async function saveOrder() {
   if (saving) return;
   const name=f_name.value.trim(), phone=f_phone.value.trim(), pkgFee=Number(f_packageFee.value)||0;
   if(!name||!phone||!pkgFee){alert('请填写姓名、手机号和套餐费');return}
+  // 新增时提醒重复手机号（同一销售员名下）
+  if (editingIdx < 0) {
+    const dup = orders.find(o => o.phone === phone &&
+      (CURRENT_SALES_PERSON === 'ALL' || o.salesPerson === CURRENT_SALES_PERSON));
+    if (dup && !confirm('手机号 ' + phone + ' 已存在（' + (dup.name||'') + ' · ' +
+        (dup.applyDate||'无日期') + '），仍要继续新增吗？')) return;
+  }
   const commission=Number(f_commission.value)||0;
   let ratePct=Number(f_commissionRate.value);
   let rate = ratePct ? ratePct/100 : (pkgFee>0 ? commission/pkgFee : 0);
@@ -868,7 +885,7 @@ function exportCSV(){
   const rows=list.map((o,i)=>[i+1,o.applyDate,o.paybackDate,o.name,o.phone,o.province,o.city,o.carrier,o.package,o.duration,o.installFee,o.packageFee,o.commission,Math.round((Number(o.commissionRate)||0)*100)+'%',o.idCard,o.address].map(v=>`"${v||''}"`).join(',')).join('\n');
   const blob=new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=CURRENT_SALES_PERSON+'_销售订单_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  a.download=CURRENT_SALES_PERSON+'_销售订单_'+todayStr()+'.csv';a.click();
 }
 
 loadData();
@@ -1013,7 +1030,7 @@ function parseAndFill() {
     .join('');
   preview.style.display = 'block';
 
-  f_applyDate.value = new Date().toISOString().slice(0,10);
+  f_applyDate.value = todayStr();
   f_paybackDate.value = '';
   f_name.value = parsed.name;
   f_phone.value = parsed.phone;
@@ -1102,16 +1119,48 @@ function showRowDetail(idx) {
     ['地址', o.address || '-'],
     ['销售员', o.salesPerson || '-'],
   ];
+  const paidBtn = o.paybackDate ? '' :
+    '<button class="btn btn-sm btn-paid" onclick="markPaid(' + idx + ')">✔ 标记回款</button>';
   card.innerHTML = '<h3>订单详情 <button class="close-btn" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\')">&times;</button></h3>' +
     fields.map(function(f) {
       return '<div class="detail-row"><span class="dl">' + f[0] + '</span><span class="dv">' + esc(f[1]) + '</span></div>';
     }).join('') +
     '<div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">' +
+    paidBtn +
     '<button class="btn btn-sm btn-cancel" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\');editOrder(' + idx + ')">编辑</button>' +
     '<button class="btn btn-sm btn-danger" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\');deleteOrder(' + idx + ')">删除</button>' +
     '</div>';
   document.getElementById('detailOverlay').classList.add('active');
 }
+
+/* ========== 一键标记回款 ========== */
+async function markPaid(idx) {
+  const o = orders[idx];
+  if (!o || o.paybackDate) return;
+  if (!confirm('确认将「' + (o.name || '该订单') + '」标记为今日（' + todayStr() + '）回款？')) return;
+  try {
+    const res = await fetch(REST + '?id=eq.' + encodeURIComponent(o.id), {
+      method: 'PATCH',
+      headers: HEADERS,
+      body: JSON.stringify({ payback_date: todayStr() })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
+    document.getElementById('detailOverlay').classList.remove('active');
+    await loadData();
+  } catch (e) {
+    alert('标记失败：' + e.message);
+  }
+}
+
+/* ========== Esc 关闭弹窗 ========== */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const ids = ['detailOverlay', 'logOverlay', 'csvImportOverlay', 'smartOverlay', 'modalOverlay'];
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (el && el.classList.contains('active')) { el.classList.remove('active'); return; }
+  }
+});
 
 /* ========== 功能 4：时间范围筛选 ========== */
 function setTimeRange(range) {
@@ -1120,7 +1169,7 @@ function setTimeRange(range) {
   const from = document.getElementById('dateFrom');
   const to = document.getElementById('dateTo');
   const today = new Date();
-  const fmt = d => d.toISOString().slice(0, 10);
+  const fmt = ymd;
 
   if (range === 'all') {
     from.value = ''; to.value = '';
