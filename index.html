@@ -569,12 +569,13 @@
     <h2>&#9889; 智能录入</h2>
     <p style="font-size:13px;color:#6b7280;margin-bottom:12px">粘贴下单信息，自动提取并填充表单</p>
     <textarea class="paste-area" id="smartText" placeholder="粘贴订单信息，例如：
-新增以下广西宽带
-姓名：李骞
-联系方式：13768515775
-身份证：450121199210026017
-办理地址：南宁市邕宁区彰泰江景湾5栋1403
-办理套餐：电信300M，399元一年"></textarea>
+姓名：苏杰
+联系方式：17365306527
+身份证：452133200206081817
+办理地址（具体到房号）：江苏省无锡市滨湖区雪浪街道雪新苑7栋1302号
+办理套餐：移动单宽带1000兆，480元一年，包安装"></textarea>
+    <p class="parse-hint">标签后带括号备注、用空格代替冒号都能识别；带宽支持
+      1000M / 1000兆 / 千兆，时限支持「一年」「两年」「18个月」「半年」。</p>
     <div class="extracted-fields" id="extractedPreview"></div>
     <div class="modal-actions">
       <button class="btn btn-cancel" onclick="closeSmartModal()">取消</button>
@@ -1497,6 +1498,32 @@ function extractProvinceFromContext(text) {
   return '';
 }
 
+/* 标签解析：真实模板里标签后面经常带括号备注、全角空格，或者干脆没有冒号，
+   例如「办理地址（具体到房号） ：」。逐个写死正则维护不过来，统一用这个helper。 */
+function fieldValue(text, labels) {
+  const label = '(?:' + labels.join('|') + ')';
+  const note = '\\s*(?:[（(][^）)]{0,30}[）)])?\\s*';   // 可选的括号备注
+  // 优先按冒号切分；没有冒号时退回用空白分隔
+  for (const sep of ['[：:]\\s*', '\\s+']) {
+    const m = text.match(new RegExp(label + note + sep + '([^\\n]+)'));
+    if (m && m[1].trim()) return m[1].trim();
+  }
+  return '';
+}
+
+const CN_DIGITS = { '一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9 };
+const CN_NUM_CHARS = '0-9一二两三四五六七八九十';
+
+// 「一年」「两年」「十二个月」这类中文数字，销售发来的原文里很常见
+function cnNumber(s) {
+  s = (s || '').trim();
+  if (/^\d+$/.test(s)) return parseInt(s, 10);
+  const m = s.match(/^([一二两三四五六七八九])?十([一二三四五六七八九])?$/);
+  if (m) return (m[1] ? CN_DIGITS[m[1]] : 1) * 10 + (m[2] ? CN_DIGITS[m[2]] : 0);
+  if (s.length === 1 && CN_DIGITS[s]) return CN_DIGITS[s];
+  return 0;
+}
+
 function parseOrderText(text) {
   const result = {
     name:'', phone:'', idCard:'', address:'',
@@ -1504,55 +1531,73 @@ function parseOrderText(text) {
     packageFee:0, installFee:0, commission:0,
     province:'', city:''
   };
-  const nameMatch = text.match(/(?:姓\s*名|客户)[：:\s]+([^\n,，]+)/);
-  if (nameMatch) result.name = nameMatch[1].trim();
 
-  const phoneMatch = text.match(/(?:联系方式|手机号|电话|手机)[：:\s]*(\d{11})/);
-  if (phoneMatch) result.phone = phoneMatch[1];
+  // 姓名后面可能跟着别的内容，只取第一段
+  const nameRaw = fieldValue(text, ['客户姓名', '姓\\s*名', '客户']);
+  if (nameRaw) result.name = nameRaw.split(/[,，、\s]/)[0].trim();
 
-  const idMatch = text.match(/(?:身份证|证件号?)[：:\s]*(\d{17}[\dXx])/i);
-  if (idMatch) result.idCard = idMatch[1].toUpperCase();
+  // 号码可能写成 173-6530-6527 或带空格，先取标签值再抽数字；
+  // 标签没匹配上时退回全文找一个手机号
+  const phoneRaw = fieldValue(text, ['联系方式', '联系电话', '手机号码', '手机号', '手机', '电话']);
+  const phoneHit = (phoneRaw.replace(/[\s\-]/g, '').match(/1[3-9]\d{9}/) ||
+                    text.replace(/[\s\-]/g, '').match(/1[3-9]\d{9}/));
+  if (phoneHit) result.phone = phoneHit[0];
 
-  const addrMatch = text.match(/(?:办理地址|地址|安装地址|装机地址)[：:\s]+([^\n]+)/);
-  if (addrMatch) {
-    result.address = addrMatch[1].trim();
-    const loc = extractCityFromAddress(result.address);
+  const idRaw = fieldValue(text, ['身份证号码', '身份证号', '身份证', '证件号码', '证件号', '证件']);
+  const idHit = (idRaw.match(/\d{17}[\dXx]/) || text.match(/\d{17}[\dXx]/));
+  if (idHit) result.idCard = idHit[0].toUpperCase();
+
+  const addr = fieldValue(text, ['办理地址', '安装地址', '装机地址', '详细地址', '收货地址', '地址']);
+  if (addr) {
+    result.address = addr;
+    const loc = extractCityFromAddress(addr);
     result.city = loc.city;
     result.province = loc.province;
   }
-
-  if (!result.province) {
-    result.province = extractProvinceFromContext(text);
+  if (!result.province) result.province = extractProvinceFromContext(text);
+  // 地址里带了省份但城市不在对照表中时，至少把省份留下
+  if (!result.province && result.address) {
+    result.province = extractProvinceFromContext(result.address);
   }
 
-  const pkgLine = text.match(/(?:办理套餐|套餐)[：:\s]*([^\n]+)/);
-  if (pkgLine) {
-    const pkg = pkgLine[1];
-    const carrierMatch = pkg.match(/(联通|移动|电信)/);
+  const pkg = fieldValue(text, ['办理套餐', '宽带套餐', '套餐内容', '套餐']);
+  if (pkg) {
+    const carrierMatch = pkg.match(/(联通|移动|电信|广电)/);
     if (carrierMatch) result.carrier = carrierMatch[1];
 
-    const speedMatch = pkg.match(/(\d+)\s*[Mm]/);
-    if (speedMatch) result.package = speedMatch[1] + 'M';
-
-    const feeMatch = pkg.match(/(\d+)\s*元/);
-    if (feeMatch) result.packageFee = parseInt(feeMatch[1]);
-
-    const durMatch = pkg.match(/(\d+)\s*年/);
-    if (durMatch) {
-      result.duration = durMatch[1] + '年';
-    } else if (pkg.match(/半年|6个月/)) {
-      result.duration = '6个月';
+    // 带宽写法：1000M / 1000m / 1000兆 / 千兆
+    if (/千兆/.test(pkg)) {
+      result.package = '1000M';
+    } else {
+      const speedMatch = pkg.match(/(\d+)\s*(?:兆|[Mm][Bb]?)/);
+      if (speedMatch) result.package = speedMatch[1] + 'M';
     }
+
+    const feeMatch = pkg.match(/(\d+(?:\.\d+)?)\s*元/);
+    if (feeMatch) result.packageFee = Math.round(parseFloat(feeMatch[1]));
+
+    // 时限：支持「一年」「两年」「18个月」「半年」
+    if (/半年/.test(pkg)) {
+      result.duration = '6个月';
+    } else {
+      const yr = pkg.match(new RegExp('([' + CN_NUM_CHARS + ']+)\\s*年'));
+      const mo = pkg.match(new RegExp('([' + CN_NUM_CHARS + ']+)\\s*个?月'));
+      if (yr && cnNumber(yr[1])) result.duration = cnNumber(yr[1]) + '年';
+      else if (mo && cnNumber(mo[1])) result.duration = cnNumber(mo[1]) + '个月';
+    }
+
+    // 「包安装」「免安装费」= 不另收安装费
+    if (/包安装|免安装|送安装/.test(pkg)) result.installFee = 0;
   }
 
-  const carrierLine = text.match(/(?:运营商)[：:\s]*(联通|移动|电信)/);
+  const carrierLine = text.match(/运营商[：:\s]*(联通|移动|电信|广电)/);
   if (carrierLine) result.carrier = carrierLine[1];
 
-  const feeMatch = text.match(/(?:安装费)[：:\s]*(\d+)/);
-  if (feeMatch) result.installFee = parseInt(feeMatch[1]);
+  const installFee = text.match(/安装费[：:\s]*(\d+)/);
+  if (installFee) result.installFee = parseInt(installFee[1], 10);
 
-  const comMatch = text.match(/(?:佣金)[：:\s]*(\d+)/);
-  if (comMatch) result.commission = parseInt(comMatch[1]);
+  const comMatch = text.match(/佣金[：:\s]*(\d+)/);
+  if (comMatch) result.commission = parseInt(comMatch[1], 10);
 
   return result;
 }
