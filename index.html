@@ -530,6 +530,7 @@
           <option value="6个月">6个月</option>
           <option value="1年" selected>1年</option>
           <option value="2年">2年</option>
+          <option value="3年">3年</option>
         </select>
       </div>
       <div class="form-group">
@@ -1148,6 +1149,17 @@ function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.
 // 与 CSS 里的手机端断点保持一致
 function isNarrow() { return window.matchMedia('(max-width:768px)').matches; }
 
+// 给下拉框赋一个选项里没有的值，浏览器会静默置空，保存时就把原值抹掉了。
+// 智能提取和 CSV 导入都可能给出「18个月」这类非预置写法，这里按需补进去。
+function setSelectValue(sel, value) {
+  const v = (value || '').trim();
+  if (!v) { sel.selectedIndex = 0; return; }
+  if (!Array.from(sel.options).some(o => o.value === v)) {
+    sel.add(new Option(v, v));
+  }
+  sel.value = v;
+}
+
 function getFilteredOrders() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const carrierFilter = document.getElementById('filterCarrier').value;
@@ -1332,8 +1344,8 @@ function openModal(idx) {
     f_applyDate.value=o.applyDate||''; f_paybackDate.value=o.paybackDate||'';
     f_name.value=o.name||''; f_phone.value=o.phone||'';
     f_province.value=o.province||''; f_city.value=o.city||'';
-    f_carrier.value=o.carrier||'联通'; f_package.value=o.package||'300m';
-    f_duration.value=o.duration||'1年'; f_installFee.value=o.installFee||'';
+    setSelectValue(f_carrier, o.carrier || '联通'); f_package.value=o.package||'300m';
+    setSelectValue(f_duration, o.duration || '1年'); f_installFee.value=o.installFee||'';
     f_packageFee.value=o.packageFee||''; f_commission.value=o.commission||'';
     f_commissionRate.value=o.commissionRate ? Math.round(o.commissionRate*100) : ''; f_idCard.value=o.idCard||'';
     f_address.value=o.address||'';
@@ -1637,9 +1649,9 @@ function parseAndFill() {
   f_phone.value = parsed.phone;
   f_province.value = parsed.province;
   f_city.value = parsed.city;
-  f_carrier.value = parsed.carrier;
+  setSelectValue(f_carrier, parsed.carrier);
   f_package.value = parsed.package;
-  f_duration.value = parsed.duration;
+  setSelectValue(f_duration, parsed.duration);
   f_installFee.value = parsed.installFee || '';
   f_packageFee.value = parsed.packageFee || '';
   f_commission.value = parsed.commission || '';
