@@ -536,8 +536,29 @@ const PASSWORD_HASH = 'EdVKIoPpPtvSH+pvWdfCY6E2pfZ6xLaoJ1qalcsWalI=';
 const AUTH_EMAIL = 'team@sales-order.local';
 const AUTH_STORE_KEY = 'salesOrderSession';
 
-let dbSession = null;   // { access_token, refresh_token, expires_at }
+let dbSession = null;    // { access_token, refresh_token, expires_at }
 let dbAuthReady = false; // 数据库账号鉴权是否生效
+let dbAuthError = '';    // Supabase 返回的失败原因，原样展示给使用者
+
+// 把 Supabase 的英文报错翻译成可以照着做的处置办法
+function authErrorHint(msg) {
+  const m = (msg || '').toLowerCase();
+  if (m.includes('email not confirmed') || m.includes('not confirmed')) {
+    return '账号没有确认。到 Authentication → Users 找到该账号，点右侧 ⋯ → Confirm email；' +
+           '或删除后重建，务必勾选 Auto Confirm User。';
+  }
+  if (m.includes('invalid login credentials')) {
+    return '邮箱或密码对不上。确认账号邮箱是 ' + AUTH_EMAIL + '，密码是页面登录用的同一个。';
+  }
+  if (m.includes('email logins are disabled') || m.includes('email provider') || m.includes('signups not allowed')) {
+    return '项目没有启用邮箱登录。到 Authentication → Providers → Email，打开 Enable Email provider。';
+  }
+  if (m.includes('email address') && m.includes('invalid')) {
+    return 'Supabase 不接受这个邮箱域名。把 index.html 里的 AUTH_EMAIL 换成常规域名' +
+           '（如 team@example.com），并用同样的邮箱重建账号。';
+  }
+  return '到 Authentication → Users 确认账号 ' + AUTH_EMAIL + ' 已存在且已确认。';
+}
 
 function HEADERS() {
   return {
@@ -584,15 +605,21 @@ async function signInToDatabase(password) {
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: AUTH_EMAIL, password })
     });
-    if (!res.ok) return null;
-    const d = await res.json();
-    if (!d.access_token) return null;
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok || !d.access_token) {
+      // 记下确切原因，否则失败时无从排查
+      dbAuthError = d.error_description || d.msg || d.error ||
+                    d.message || ('HTTP ' + res.status);
+      return null;
+    }
+    dbAuthError = '';
     return {
       access_token: d.access_token,
       refresh_token: d.refresh_token || '',
       expires_at: Date.now() + ((d.expires_in || 3600) - 60) * 1000
     };
   } catch (e) {
+    dbAuthError = '无法连接 Supabase：' + e.message;
     return null;
   }
 }
@@ -649,8 +676,11 @@ function enterApp() {
   document.getElementById('appRoot').classList.add('ready');
   const banner = document.getElementById('setupBanner');
   if (banner && !dbAuthReady) {
-    banner.innerHTML = '⚠️ 数据库账号鉴权未生效：当前仅有页面密码保护，数据仍可被绕过页面直接读写。' +
-      '请按 <code>README.md</code> 的说明执行 <code>supabase/security.sql</code> 并创建登录账号。';
+    banner.innerHTML = '⚠️ <b>数据库登录失败</b>，当前仅有页面密码保护。' +
+      (dbAuthError
+        ? '<br>Supabase 返回：<code>' + esc(dbAuthError) + '</code><br>处理办法：' + esc(authErrorHint(dbAuthError))
+        : '请按 <code>README.md</code> 创建登录账号并执行 <code>supabase/security.sql</code>。') +
+      '<br>账号邮箱应为 <code>' + esc(AUTH_EMAIL) + '</code>，密码与页面登录密码相同。';
     banner.classList.add('visible');
   } else if (banner) {
     banner.classList.remove('visible');
@@ -702,7 +732,10 @@ async function bootstrap() {
   const stored = readStoredSession();
   if (!stored || !stored.data || !stored.data.ok) { showLogin(''); return; }
   dbSession = stored.data.db || null;
-  if (dbSession && Date.now() >= dbSession.expires_at) {
+  // 上次登录没换到数据库令牌（多半是当时 Supabase 账号还没配好）。
+  // 缓存这个残缺状态没有意义，重新要一次密码，好再试一遍换取令牌。
+  if (!dbSession) { showLogin('请重新输入密码，以连接数据库'); return; }
+  if (Date.now() >= dbSession.expires_at) {
     const refreshed = await refreshDatabaseSession();
     if (!refreshed) { clearStoredSession(); showLogin('登录已过期，请重新输入密码'); return; }
   }
