@@ -840,6 +840,23 @@ try { trendMetric = localStorage.getItem('salesOrderTrendMetric') || 'commission
 // 最近一次成功加载的数据，供离线时只读展示
 const DATA_CACHE_KEY = 'salesOrderData';
 
+// 只显示本人名下的订单。数据库里可能还留着他人（或早期导入时归属为空）的
+// 历史记录，它们不进入界面，但会在顶部标出条数，避免悄无声息地消失。
+let hiddenCount = 0;
+
+function toMine(rows) {
+  const all = rows.map(fromRow);
+  const mine = all.filter(o => o.salesPerson === SALES_PERSON);
+  hiddenCount = all.length - mine.length;
+  return mine;
+}
+
+function statusLine(suffix) {
+  return '共 ' + orders.length + ' 条记录' +
+    (hiddenCount ? '（另有 ' + hiddenCount + ' 条非本人名下，未显示）' : '') +
+    ' · ' + suffix;
+}
+
 function cacheOrders(rows) {
   try {
     localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({ at: Date.now(), rows }));
@@ -919,20 +936,20 @@ async function loadData() {
     }
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
-    orders = rows.map(fromRow);
+    orders = toMine(rows);
     usingCachedData = false;
     cacheOrders(rows);
   } catch (e) {
     // 装到主屏后断网也会走到这里：有缓存就以只读方式先顶上，好过一片空白
     const cached = readCachedOrders();
     if (cached) {
-      orders = cached.rows.map(fromRow);
+      orders = toMine(cached.rows);
       usingCachedData = true;
       showOfflineBanner(cached.at, e.message);
       refreshFilterOptions();
       renderStats(); renderTrend(); renderTable();
       document.getElementById('lastUpdate').textContent =
-        '离线数据 · 缓存于 ' + new Date(cached.at).toLocaleString('zh-CN');
+        statusLine('离线数据，缓存于 ' + new Date(cached.at).toLocaleString('zh-CN'));
       return;
     }
     orders = [];
@@ -946,7 +963,7 @@ async function loadData() {
   renderTrend();
   renderTable();
   document.getElementById('lastUpdate').textContent =
-    '共 ' + orders.length + ' 条记录 · 最后更新：' + new Date().toLocaleString('zh-CN');
+    statusLine('最后更新：' + new Date().toLocaleString('zh-CN'));
 }
 
 function refreshFilterOptions() {
