@@ -130,6 +130,8 @@
 
   /* --- Sales person column (ALL mode) --- */
   .col-sales{font-weight:500;color:#6366f1}
+  /* 套餐原始数据大小写不一，显示时统一为大写，列看起来才齐 */
+  .col-package{text-transform:uppercase}
 
   /* --- Time range filter pills --- */
   .time-filter{display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex:1;min-width:0}
@@ -266,11 +268,29 @@
     .tb-actions,.tb-actions-secondary{flex-wrap:wrap;gap:6px}
     .tb-actions .btn,.tb-actions-secondary .btn{flex:1;min-width:100px;justify-content:center}
     .time-filter{flex-direction:column;align-items:stretch;gap:8px}
-    .time-filter .pill-group{flex-wrap:wrap}
+    .time-filter .pill-group{display:grid;grid-template-columns:repeat(3,1fr)}
+    .time-filter .pill{padding:9px 4px;text-align:center}
+    .time-filter .pill:nth-child(3n){border-right:none}
+    .time-filter .pill:nth-child(-n+3){border-bottom:1px solid #e5e7eb}
+    /* 日期输入在 iOS 上没有内容时会塌成一个空白小圆角，必须显式撑开 */
+    .time-filter .date-range{width:100%;gap:8px}
+    .time-filter .date-range input[type="date"]{flex:1;min-width:0;width:100%;
+        min-height:38px;padding:9px 10px;font-size:13px;text-align:center;
+        -webkit-appearance:none;appearance:none}
+    .time-filter .date-range span{flex-shrink:0}
+    /* 筛选按钮独占一行时拉满，与上下两行同宽 */
+    .filter-bar{width:100%}
+    .btn-filter{flex:1;justify-content:center;padding:9px 14px}
+    /* 各行控件统一高度，否则搜索框、筛选、按钮三行高矮不一 */
+    .search-box,.btn-filter,.tb-row-filters .ctrl,
+    .tb-actions .btn,.tb-actions-secondary .btn{min-height:42px}
+    .search-box input{padding:11px 8px}
+    .tb-actions .btn,.tb-actions-secondary .btn{padding:11px 14px}
     .form-grid{grid-template-columns:1fr}
     .form-group.span2,.form-group.span3{grid-column:1/-1}
-    /* 手机上保留表格，做紧凑处理：页面整体滚动，不做内层滚动 */
-    .table-wrap{padding:0 8px;max-height:none;min-height:0}
+    /* 手机上保留表格，做紧凑处理：页面整体滚动，不做内层滚动。
+       左右留白与统计卡、工具栏统一为 12px，避免各块边缘参差。 */
+    .table-wrap{padding:0 12px;max-height:none;min-height:0}
     .table-wrap table{font-size:12px}
     .table-wrap th{padding:9px 5px;font-size:11px}
     .table-wrap td{padding:9px 5px;font-size:12px;line-height:1.4}
@@ -278,16 +298,19 @@
     .table-wrap .btn-sm{padding:4px 9px;font-size:11px}
     /* 只保留 姓名/手机/省份/城市/运营商/套餐/佣金，其余收进详情弹窗。
        选择器限定在 .table-wrap 内，否则会误伤 ALL 视图的业绩榜表格。 */
-    .table-wrap thead th:first-child,.table-wrap tbody td:first-child, /* 序号 */
-    .table-wrap th:nth-child(2),.table-wrap td:nth-child(2),   /* 办理日期 */
-    .table-wrap th:nth-child(3),.table-wrap td:nth-child(3),   /* 回款日期 */
-    .table-wrap th:nth-child(10),.table-wrap td:nth-child(10), /* 时限 */
-    .table-wrap th:nth-child(11),.table-wrap td:nth-child(11), /* 安装费 */
-    .table-wrap th:nth-child(12),.table-wrap td:nth-child(12), /* 套餐费 */
-    .table-wrap th:nth-child(14),.table-wrap td:nth-child(14), /* 佣金率 */
-    .table-wrap th:nth-child(15),.table-wrap td:nth-child(15), /* 身份证号 */
-    .table-wrap th:nth-child(16),.table-wrap td:nth-child(16), /* 地址 */
-    .table-wrap th:nth-child(17).th-sales,.table-wrap td:nth-child(17).col-sales,
+    /* 必须限定在 thead / tbody：合计行的单元格序号含义不同，
+       套用同一组 nth-child 会误伤它，并让列宽模型与表体对不上。 */
+    .table-wrap thead th:nth-child(1),.table-wrap tbody td:nth-child(1),   /* 序号 */
+    .table-wrap thead th:nth-child(2),.table-wrap tbody td:nth-child(2),   /* 办理日期 */
+    .table-wrap thead th:nth-child(3),.table-wrap tbody td:nth-child(3),   /* 回款日期 */
+    .table-wrap thead th:nth-child(6),.table-wrap tbody td:nth-child(6),   /* 省份 */
+    .table-wrap thead th:nth-child(10),.table-wrap tbody td:nth-child(10), /* 时限 */
+    .table-wrap thead th:nth-child(11),.table-wrap tbody td:nth-child(11), /* 安装费 */
+    .table-wrap thead th:nth-child(12),.table-wrap tbody td:nth-child(12), /* 套餐费 */
+    .table-wrap thead th:nth-child(14),.table-wrap tbody td:nth-child(14), /* 佣金率 */
+    .table-wrap thead th:nth-child(15),.table-wrap tbody td:nth-child(15), /* 身份证号 */
+    .table-wrap thead th:nth-child(16),.table-wrap tbody td:nth-child(16), /* 地址 */
+    .table-wrap thead th:nth-child(17).th-sales,.table-wrap tbody td:nth-child(17).col-sales,
     /* 操作列：点整行即可打开详情，编辑删除都在里面，手机上不必单列 */
     .table-wrap thead th:last-child,.table-wrap tbody td:last-child{display:none}
     /* Make visible rows tappable */
@@ -301,6 +324,11 @@
     .trend-toggle{margin-left:auto}
     .leaderboard-wrap{padding:0 12px}
     .modal{width:98%;padding:16px}
+  }
+  /* 380px 以下（iPhone SE 一类）再收一档，保证仍不用横向拖动 */
+  @media(max-width:380px){
+    .table-wrap th,.table-wrap td{padding:9px 4px}
+    .table-wrap table{font-size:11.5px}
   }
 </style>
 </head>
@@ -1114,6 +1142,9 @@ function carrierBadge(c) {
 
 function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
+// 与 CSS 里的手机端断点保持一致
+function isNarrow() { return window.matchMedia('(max-width:768px)').matches; }
+
 function getFilteredOrders() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const carrierFilter = document.getElementById('filterCarrier').value;
@@ -1176,7 +1207,7 @@ function renderTable() {
       '<td class="nowrap">' + esc(o.province) + '</td>' +
       '<td class="nowrap">' + esc(o.city) + '</td>' +
       '<td class="nowrap"><span class="badge ' + carrierBadge(o.carrier) + '">' + esc(o.carrier) + '</span></td>' +
-      '<td class="nowrap">' + esc(o.package) + '</td>' +
+      '<td class="nowrap col-package">' + esc(o.package) + '</td>' +
       '<td class="nowrap">' + esc(o.duration) + '</td>' +
       '<td class="text-right nowrap">\u00a5' + Number(o.installFee||0).toLocaleString() + '</td>' +
       '<td class="text-right nowrap">\u00a5' + Number(o.packageFee||0).toLocaleString() + '</td>' +
@@ -1197,17 +1228,28 @@ function renderTable() {
   const sumInstall = filtered.reduce((s,o)=>s+(Number(o.installFee)||0),0);
   const sumPkg = filtered.reduce((s,o)=>s+(Number(o.packageFee)||0),0);
   const sumCom = filtered.reduce((s,o)=>s+(Number(o.commission)||0),0);
-  // 表头前 10 列（序号…时限）固定，其后为 安装费/套餐费/佣金 三列，
-  // 尾部为 佣金率/身份证号/地址/[销售员]/操作
-  const baseCols = 10;
-  const tailCols = isAll ? 5 : 4;
-  document.getElementById('totalRow').innerHTML = '<tr class="total-row">' +
-    '<td colspan="' + baseCols + '">合计 (' + filtered.length + '笔)</td>' +
-    '<td class="text-right">\u00a5' + sumInstall.toLocaleString() + '</td>' +
-    '<td class="text-right">\u00a5' + sumPkg.toLocaleString() + '</td>' +
-    '<td class="text-right col-commission">\u00a5' + sumCom.toLocaleString() + '</td>' +
-    '<td colspan="' + tailCols + '"></td>' +
-  '</tr>';
+  // 合计行的单元格必须与当前可见列一一对应：colspan 写死在 HTML 里，
+  // 光靠 CSS 隐藏列会让列宽模型多算几列，表体右侧就会空出一块。
+  const foot = document.getElementById('totalRow');
+  if (isNarrow()) {
+    // 手机上可见：姓名/手机号/城市/运营商/套餐/佣金，共 6 列
+    foot.innerHTML = '<tr class="total-row">' +
+      '<td colspan="5">合计 (' + filtered.length + '笔)</td>' +
+      '<td class="text-right col-commission">¥' + sumCom.toLocaleString() + '</td>' +
+    '</tr>';
+  } else {
+    // 表头前 10 列（序号…时限）固定，其后为 安装费/套餐费/佣金 三列，
+    // 尾部为 佣金率/身份证号/地址/[销售员]/操作
+    const baseCols = 10;
+    const tailCols = isAll ? 5 : 4;
+    foot.innerHTML = '<tr class="total-row">' +
+      '<td colspan="' + baseCols + '">合计 (' + filtered.length + '笔)</td>' +
+      '<td class="text-right">¥' + sumInstall.toLocaleString() + '</td>' +
+      '<td class="text-right">¥' + sumPkg.toLocaleString() + '</td>' +
+      '<td class="text-right col-commission">¥' + sumCom.toLocaleString() + '</td>' +
+      '<td colspan="' + tailCols + '"></td>' +
+    '</tr>';
+  }
 }
 
 /* ========== 离线提示 ========== */
@@ -1729,11 +1771,12 @@ function setTrendMetric(metric) {
   renderTrend();
 }
 
-// 横竖屏或窗口尺寸切换时重画，让窄屏/宽屏两套排版都能生效
-let trendResizeTimer = null;
+// 横竖屏或窗口尺寸切换时重画，让窄屏/宽屏两套排版都能生效。
+// 表格也要重画：合计行的 colspan 在两套排版下不同。
+let layoutResizeTimer = null;
 window.addEventListener('resize', () => {
-  clearTimeout(trendResizeTimer);
-  trendResizeTimer = setTimeout(renderTrend, 200);
+  clearTimeout(layoutResizeTimer);
+  layoutResizeTimer = setTimeout(() => { renderTrend(); renderTable(); }, 200);
 });
 
 /* ========== 一键标记回款 ========== */
