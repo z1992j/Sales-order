@@ -106,16 +106,6 @@
   .bar-fill-telecom{background:#eab308}
   .carrier-pct{font-size:10px;color:#6b7280;min-width:28px;text-align:right}
 
-  /* --- Leaderboard --- */
-  .leaderboard-wrap{max-width:1600px;margin:0 auto 12px;padding:0 16px}
-  .leaderboard-wrap h3{font-size:14px;font-weight:600;color:#374151;margin-bottom:8px}
-  .leaderboard{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);font-size:13px}
-  .leaderboard thead{background:#f0f9ff}
-  .leaderboard th{padding:10px 14px;text-align:left;font-size:12px;font-weight:600;color:#1e40af;white-space:nowrap}
-  .leaderboard td{padding:10px 14px;border-top:1px solid #f3f4f6;font-size:13px;color:#1f2937}
-  .leaderboard tr:hover td{background:#f8fafc}
-  .leaderboard .rank{font-weight:700;color:#1e40af;width:36px;text-align:center}
-
   /* --- Row detail modal (mobile) --- */
   .detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:16px}
   .detail-overlay.active{display:flex}
@@ -128,8 +118,6 @@
   .detail-row .dl{color:#6b7280;flex-shrink:0;margin-right:12px}
   .detail-row .dv{color:#1f2937;font-weight:500;text-align:right;word-break:break-all}
 
-  /* --- Sales person column (ALL mode) --- */
-  .col-sales{font-weight:500;color:#6366f1}
   /* 套餐原始数据大小写不一，显示时统一为大写，列看起来才齐 */
   .col-package{text-transform:uppercase}
 
@@ -312,7 +300,6 @@
     .table-wrap thead th:nth-child(14),.table-wrap tbody td:nth-child(14), /* 佣金率 */
     .table-wrap thead th:nth-child(15),.table-wrap tbody td:nth-child(15), /* 身份证号 */
     .table-wrap thead th:nth-child(16),.table-wrap tbody td:nth-child(16), /* 地址 */
-    .table-wrap thead th:nth-child(17).th-sales,.table-wrap tbody td:nth-child(17).col-sales,
     /* 操作列：点整行即可打开详情，编辑删除都在里面，手机上不必单列 */
     .table-wrap thead th:last-child,.table-wrap tbody td:last-child{display:none}
     /* Make visible rows tappable */
@@ -324,7 +311,6 @@
     .trend-card h3{font-size:13px}
     .trend-card h3 .hint{order:3;width:100%;margin-left:0}
     .trend-toggle{margin-left:auto}
-    .leaderboard-wrap{padding:0 12px}
     .modal{width:98%;padding:16px}
   }
   /* 380px 以下（iPhone SE 一类）再收一档，保证仍不用横向拖动 */
@@ -354,13 +340,6 @@
   <div class="container">
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <h1>销售订单登记</h1>
-      <span id="salesPersonBadge" style="background:rgba(255,255,255,.2);padding:4px 12px;border-radius:999px;font-size:13px;font-weight:500"></span>
-      <select id="salesPersonSwitcher" onchange="switchSalesPerson(this.value)" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:5px 10px;border-radius:6px;font-size:13px;cursor:pointer;outline:none">
-      </select>
-      <button id="copyLinkBtn" onclick="copySalesPersonLink()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;outline:none;transition:.15s;display:inline-flex;align-items:center;gap:4px">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        <span id="copyLinkLabel">复制链接</span>
-      </button>
       <button class="btn-logout" onclick="logout()" title="退出登录">退出</button>
     </div>
     <p id="lastUpdate">数据加载中…</p>
@@ -371,7 +350,6 @@
 <div class="offline-banner" id="offlineBanner"></div>
 <div class="stats" id="stats"></div>
 <div class="trend-wrap" id="trendWrap"></div>
-<div class="leaderboard-wrap" id="leaderboardWrap" style="display:none"></div>
 
 <div class="toolbar" id="toolbar">
   <!-- Row 1: 搜索 + 筛选开关 + 主操作 -->
@@ -467,7 +445,6 @@
         <th class="text-right">佣金率</th>
         <th>身份证号</th>
         <th>地址</th>
-        <th class="th-sales" style="display:none">销售员</th>
         <th>操作</th>
       </tr>
     </thead>
@@ -847,11 +824,9 @@ async function bootstrap() {
   enterApp();
 }
 
-// 销售员名单（如需新增成员，在此数组追加即可）
-const SALES_TEAM = ['大卫', '格顺', '阿咪', '东海'];
-
-// 从 URL 参数读取当前销售员，默认 '大卫'
-const CURRENT_SALES_PERSON = (new URLSearchParams(location.search).get('user') || '大卫').trim();
+// 单人使用：新建订单一律记在这个名下。
+// 该字段仍写入数据库，历史数据与导出格式保持兼容。
+const SALES_PERSON = '大卫';
 
 let orders = [];
 let editingIdx = -1;
@@ -908,7 +883,7 @@ function toRow(o) {
     commission_rate: Number(o.commissionRate) || 0,
     id_card:         o.idCard  || '',
     address:         o.address || '',
-    sales_person:    o.salesPerson || CURRENT_SALES_PERSON
+    sales_person:    o.salesPerson || SALES_PERSON
   };
 }
 
@@ -955,7 +930,6 @@ async function loadData() {
       usingCachedData = true;
       showOfflineBanner(cached.at, e.message);
       refreshFilterOptions();
-      initSalesPersonSwitcher();
       renderStats(); renderTrend(); renderTable();
       document.getElementById('lastUpdate').textContent =
         '离线数据 · 缓存于 ' + new Date(cached.at).toLocaleString('zh-CN');
@@ -968,22 +942,19 @@ async function loadData() {
   }
   hideOfflineBanner();
   refreshFilterOptions();
-  initSalesPersonSwitcher();
   renderStats();
   renderTrend();
   renderTable();
-  const mineCount = orders.filter(o => o.salesPerson === CURRENT_SALES_PERSON).length;
   document.getElementById('lastUpdate').textContent =
-    '当前用户：' + CURRENT_SALES_PERSON + ' · ' + mineCount + ' 条记录（全公司共 ' + orders.length + ' 条）· 最后更新：' + new Date().toLocaleString('zh-CN');
+    '共 ' + orders.length + ' 条记录 · 最后更新：' + new Date().toLocaleString('zh-CN');
 }
 
 function refreshFilterOptions() {
   const sel = document.getElementById('filterProvince');
   if (!sel) return;
   const prev = sel.value;
-  const isAll = CURRENT_SALES_PERSON === 'ALL';
   const provinces = Array.from(new Set(
-    orders.filter(o => isAll || o.salesPerson === CURRENT_SALES_PERSON).map(o => o.province).filter(Boolean)
+    orders.map(o => o.province).filter(Boolean)
   )).sort((a,b) => a.localeCompare(b,'zh-CN'));
   sel.innerHTML = '<option value="">全部省份</option>' +
     provinces.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
@@ -991,8 +962,7 @@ function refreshFilterOptions() {
 }
 
 function renderStats() {
-  const isAll = CURRENT_SALES_PERSON === 'ALL';
-  const mine = isAll ? orders : orders.filter(o => o.salesPerson === CURRENT_SALES_PERSON);
+  const mine = orders;
   const total = mine.length;
   const totalCommission = mine.reduce((s, o) => s + (Number(o.commission)||0), 0);
 
@@ -1073,69 +1043,6 @@ function renderStats() {
     return '<div class="stat-card' + (c.cls || '') + '"><div class="label">' + c.label + '</div>' + body + '</div>';
   }).join('');
 
-  // Leaderboard for ALL mode
-  const lbWrap = document.getElementById('leaderboardWrap');
-  if (lbWrap) {
-    if (isAll) {
-      lbWrap.style.display = '';
-      renderLeaderboard();
-    } else {
-      lbWrap.style.display = 'none';
-      lbWrap.innerHTML = '';
-    }
-  }
-}
-
-function initSalesPersonSwitcher() {
-  const sel = document.getElementById('salesPersonSwitcher');
-  if (!sel) return;
-  // 合并固定名单 + 数据库中已有的人员，去重后排序
-  const allPersons = Array.from(new Set([
-    ...SALES_TEAM,
-    ...orders.map(o => o.salesPerson).filter(Boolean)
-  ])).sort((a, b) => a.localeCompare(b, 'zh-CN'));
-  sel.innerHTML =
-    '<option value="ALL" ' + (CURRENT_SALES_PERSON === 'ALL' ? 'selected' : '') + '>\u{1F465} 全部成员</option>' +
-    allPersons.map(p =>
-    '<option value="' + p + '" ' + (p === CURRENT_SALES_PERSON ? 'selected' : '') + '>' + p + '</option>'
-  ).join('');
-  const badge = document.getElementById('salesPersonBadge');
-  if (badge) badge.textContent = '当前：' + (CURRENT_SALES_PERSON === 'ALL' ? '全部成员' : CURRENT_SALES_PERSON);
-}
-
-function switchSalesPerson(newPerson) {
-  const url = new URL(location.href);
-  url.searchParams.set('user', newPerson);
-  location.href = url.toString();
-}
-
-async function copySalesPersonLink() {
-  const url = new URL(location.href);
-  url.searchParams.set('user', CURRENT_SALES_PERSON);
-  // 去掉无关参数，只保留 user
-  for (const key of Array.from(url.searchParams.keys())) {
-    if (key !== 'user') url.searchParams.delete(key);
-  }
-  const link = url.toString();
-  const label = document.getElementById('copyLinkLabel');
-  const btn = document.getElementById('copyLinkBtn');
-  try {
-    await navigator.clipboard.writeText(link);
-    if (label) label.textContent = '已复制';
-    if (btn) btn.style.background = 'rgba(16,185,129,.35)';
-  } catch (e) {
-    // 降级方案：旧浏览器
-    const ta = document.createElement('textarea');
-    ta.value = link; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); if (label) label.textContent = '已复制'; if (btn) btn.style.background = 'rgba(16,185,129,.35)'; }
-    catch { if (label) label.textContent = '复制失败'; }
-    document.body.removeChild(ta);
-  }
-  setTimeout(() => {
-    if (label) label.textContent = '复制链接';
-    if (btn) btn.style.background = 'rgba(255,255,255,.15)';
-  }, 2000);
 }
 
 function carrierBadge(c) {
@@ -1168,10 +1075,7 @@ function getFilteredOrders() {
   const sortVal = document.getElementById('sortBy').value;
   const dateFrom = (document.getElementById('dateFrom')||{}).value || '';
   const dateTo = (document.getElementById('dateTo')||{}).value || '';
-  const isAll = CURRENT_SALES_PERSON === 'ALL';
-
   let filtered = orders.filter(o => {
-    if (!isAll && o.salesPerson !== CURRENT_SALES_PERSON) return false;
     if (q && !((o.name||'').toLowerCase().includes(q) || (o.phone||'').includes(q) ||
                (o.city||'').toLowerCase().includes(q) || (o.package||'').toLowerCase().includes(q) ||
                (o.province||'').toLowerCase().includes(q) || (o.carrier||'').toLowerCase().includes(q))) return false;
@@ -1203,12 +1107,7 @@ function getFilteredOrders() {
 function renderTable() {
   const filtered = getFilteredOrders();
   const tbody = document.getElementById('tableBody');
-  const isAll = CURRENT_SALES_PERSON === 'ALL';
   document.getElementById('emptyMsg').style.display = filtered.length ? 'none' : 'block';
-
-  // Show/hide sales person column header
-  const salesHeaders = document.querySelectorAll('.th-sales');
-  salesHeaders.forEach(th => th.style.display = isAll ? '' : 'none');
 
   tbody.innerHTML = filtered.map((o, i) => {
     const ri = orders.indexOf(o);
@@ -1230,7 +1129,6 @@ function renderTable() {
       '<td class="text-right nowrap">' + Math.round((Number(o.commissionRate)||0)*100) + '%</td>' +
       '<td class="nowrap" style="letter-spacing:.3px">' + esc(o.idCard||'') + '</td>' +
       '<td style="white-space:normal;min-width:220px;max-width:300px">' + esc(o.address||'') + '</td>' +
-      (isAll ? '<td class="nowrap col-sales">' + esc(o.salesPerson||'') + '</td>' : '') +
       '<td class="nowrap" onclick="event.stopPropagation()">' +
         '<button class="btn btn-sm btn-cancel" onclick="editOrder(' + ri + ')">编辑</button>' +
         '<button class="btn btn-sm btn-danger" onclick="deleteOrder(' + ri + ')">删除</button>' +
@@ -1257,8 +1155,8 @@ function renderTable() {
   } else {
     // 表头前 10 列（序号…时限）固定，其后为 安装费/套餐费/佣金 三列，
     // 尾部为 佣金率/身份证号/地址/[销售员]/操作
-    const baseCols = 10;
-    const tailCols = isAll ? 5 : 4;
+    const baseCols = 10;   // 序号…时限
+    const tailCols = 4;    // 佣金率 / 身份证号 / 地址 / 操作
     foot.innerHTML = '<tr class="total-row">' +
       '<td colspan="' + baseCols + '">合计 (' + filtered.length + '笔)</td>' +
       '<td class="text-right">¥' + sumInstall.toLocaleString() + '</td>' +
@@ -1379,10 +1277,9 @@ async function saveOrder() {
     alert('回款日期不能早于办理日期'); f_paybackDate.focus(); return;
   }
 
-  // 新增时提醒重复手机号（同一销售员名下）
+  // 新增时提醒重复手机号
   if (editingIdx < 0) {
-    const dup = orders.find(o => o.phone === phone &&
-      (CURRENT_SALES_PERSON === 'ALL' || o.salesPerson === CURRENT_SALES_PERSON));
+    const dup = orders.find(o => o.phone === phone);
     if (dup && !confirm('手机号 ' + phone + ' 已存在（' + (dup.name||'') + ' · ' +
         (dup.applyDate||'无日期') + '），仍要继续新增吗？')) return;
   }
@@ -1397,7 +1294,7 @@ async function saveOrder() {
     installFee:Number(f_installFee.value)||0, packageFee:pkgFee,
     commission, commissionRate:rate,
     idCard, address:f_address.value.trim(),
-    salesPerson: editingIdx >= 0 ? orders[editingIdx].salesPerson : CURRENT_SALES_PERSON
+    salesPerson: editingIdx >= 0 ? orders[editingIdx].salesPerson : SALES_PERSON
   };
 
   saving = true;
@@ -1451,12 +1348,12 @@ async function deleteOrder(i){
 function exportCSV(){
   const list = getFilteredOrders();
   // 表头与导入端的别名表一致，导出的文件可以直接改完再导回来
-  const h='序号,办理日期,回款日期,姓名,手机号,省份,城市,运营商,套餐,时限,安装费,套餐费,佣金,佣金率,身份证号,地址,销售员\n';
+  const h='序号,办理日期,回款日期,姓名,手机号,省份,城市,运营商,套餐,时限,安装费,套餐费,佣金,佣金率,身份证号,地址\n';
   const cell=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
-  const rows=list.map((o,i)=>[i+1,o.applyDate,o.paybackDate,o.name,o.phone,o.province,o.city,o.carrier,o.package,o.duration,o.installFee,o.packageFee,o.commission,Math.round((Number(o.commissionRate)||0)*100)+'%',o.idCard,o.address,o.salesPerson].map(cell).join(',')).join('\n');
+  const rows=list.map((o,i)=>[i+1,o.applyDate,o.paybackDate,o.name,o.phone,o.province,o.city,o.carrier,o.package,o.duration,o.installFee,o.packageFee,o.commission,Math.round((Number(o.commissionRate)||0)*100)+'%',o.idCard,o.address].map(cell).join(',')).join('\n');
   const blob=new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=CURRENT_SALES_PERSON+'_销售订单_'+todayStr()+'.csv';a.click();
+  a.download='销售订单_'+todayStr()+'.csv';a.click();
 }
 
 const CITY_PROVINCE_MAP = {
@@ -1665,51 +1562,6 @@ function parseAndFill() {
   }, 1200);
 }
 
-function renderLeaderboard() {
-  const wrap = document.getElementById('leaderboardWrap');
-  if (!wrap) return;
-
-  // Group orders by salesPerson
-  const groups = {};
-  orders.forEach(o => {
-    const sp = o.salesPerson || '未知';
-    if (!groups[sp]) groups[sp] = [];
-    groups[sp].push(o);
-  });
-
-  // Build rows
-  const rows = Object.keys(groups).map(sp => {
-    const list = groups[sp];
-    const count = list.length;
-    const totalCommission = list.reduce((s, o) => s + (Number(o.commission)||0), 0);
-    const avgRate = count > 0
-      ? list.reduce((s, o) => s + (Number(o.commissionRate)||0), 0) / count
-      : 0;
-    const unpaidCount = list.filter(o => !o.paybackDate).length;
-    return { sp, count, totalCommission, avgRate, unpaidCount };
-  });
-
-  // Sort by commission desc
-  rows.sort((a, b) => b.totalCommission - a.totalCommission);
-
-  const medals = ['\ud83e\udd47', '\ud83e\udd48', '\ud83e\udd49'];
-  wrap.innerHTML = '<h3>\ud83c\udfc6 团队业绩榜</h3>' +
-    '<table class="leaderboard"><thead><tr>' +
-    '<th>排名</th><th>姓名</th><th>订单数</th><th>佣金合计</th><th>平均佣金率</th><th>未回款</th>' +
-    '</tr></thead><tbody>' +
-    rows.map((r, i) =>
-      '<tr>' +
-      '<td class="rank">' + (i < 3 ? medals[i] : (i+1)) + '</td>' +
-      '<td>' + esc(r.sp) + '</td>' +
-      '<td>' + r.count + ' 笔</td>' +
-      '<td style="color:#16a34a;font-weight:600">\u00a5' + r.totalCommission.toLocaleString() + '</td>' +
-      '<td>' + Math.round(r.avgRate * 100) + '%</td>' +
-      '<td style="' + (r.unpaidCount > 0 ? 'color:#dc2626;font-weight:600' : '') + '">' + r.unpaidCount + '</td>' +
-    '</tr>'
-    ).join('') +
-    '</tbody></table>';
-}
-
 function showRowDetail(idx) {
   const o = orders[idx];
   if (!o) return;
@@ -1730,7 +1582,6 @@ function showRowDetail(idx) {
     ['佣金率', Math.round((Number(o.commissionRate)||0)*100) + '%'],
     ['身份证号', o.idCard || '-'],
     ['地址', o.address || '-'],
-    ['销售员', o.salesPerson || '-'],
   ];
   const paidBtn = o.paybackDate ? '' :
     '<button class="btn btn-sm btn-paid" onclick="markPaid(' + idx + ')">✔ 标记回款</button>';
@@ -1750,8 +1601,7 @@ function showRowDetail(idx) {
 function renderTrend() {
   const wrap = document.getElementById('trendWrap');
   if (!wrap) return;
-  const isAll = CURRENT_SALES_PERSON === 'ALL';
-  const mine = isAll ? orders : orders.filter(o => o.salesPerson === CURRENT_SALES_PERSON);
+  const mine = orders;
 
   // 最近 12 个自然月（含当月）
   const now = new Date();
@@ -2007,8 +1857,7 @@ function buildImportPlan(text) {
     if (applyDate && existingKeys.has(key)) { skipped++; continue; }
     if (applyDate) existingKeys.add(key);
 
-    const salesPerson = rec.salesPerson ||
-      (CURRENT_SALES_PERSON === 'ALL' ? '未分配' : CURRENT_SALES_PERSON);
+    const salesPerson = rec.salesPerson || SALES_PERSON;
     rows.push({
       apply_date:      applyDate,
       payback_date:    normalizeDate(rec.paybackDate),
@@ -2111,8 +1960,7 @@ async function openLogViewer() {
   document.getElementById('logContent').innerHTML = '<div class="log-empty">加载中…</div>';
   document.getElementById('logOverlay').classList.add('active');
   await ensureFreshSession();
-  const url = SUPABASE_URL + '/rest/v1/order_logs?select=*&order=created_at.desc&limit=50' +
-    (CURRENT_SALES_PERSON !== 'ALL' ? '&actor=eq.' + encodeURIComponent(CURRENT_SALES_PERSON) : '');
+  const url = SUPABASE_URL + '/rest/v1/order_logs?select=*&order=created_at.desc&limit=50';
   fetch(url, { headers: HEADERS() })
     .then(r => r.json())
     .then(rows => {
