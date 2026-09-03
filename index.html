@@ -40,6 +40,7 @@
   .btn-sm:last-child{margin-right:0}
   .btn-danger{background:#fee2e2;color:#dc2626}.btn-danger:hover{background:#fca5a5}
   .btn-cancel{background:#f3f4f6;color:#374151}
+  .btn-paid{background:#dcfce7;color:#16a34a;font-weight:600}.btn-paid:hover{background:#bbf7d0}
   .table-wrap{max-width:1600px;margin:0 auto 32px;padding:0 16px;overflow-x:auto}
   table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);font-size:13px}
   thead{background:#f9fafb}
@@ -166,6 +167,41 @@
   .log-diff-arrow{color:#9ca3af}
   .log-empty{text-align:center;padding:32px 16px;color:#9ca3af;font-size:13px}
 
+  /* --- Login gate --- */
+  #appRoot{display:none}
+  #appRoot.ready{display:block}
+  .login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1e3a8a,#3b82f6);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+  .login-overlay.hidden{display:none}
+  .login-card{background:#fff;border-radius:16px;padding:32px 28px;width:100%;max-width:360px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+  .login-card h2{font-size:19px;font-weight:600;margin-bottom:6px;color:#111827}
+  .login-card p.sub{font-size:12px;color:#6b7280;margin-bottom:20px}
+  .login-card label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px}
+  .login-card input{width:100%;padding:11px 12px;border:1px solid #d1d5db;border-radius:9px;font-size:15px;outline:none;letter-spacing:2px;transition:.15s}
+  .login-card input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+  .login-card .btn{width:100%;justify-content:center;margin-top:16px;padding:11px}
+  .login-err{color:#dc2626;font-size:12px;margin-top:10px;min-height:16px}
+  .login-remember{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:#6b7280}
+  .login-remember input{width:auto;margin:0}
+  .btn-logout{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;outline:none}
+  .btn-logout:hover{background:rgba(255,255,255,.28)}
+
+  /* --- Setup notice --- */
+  .setup-banner{display:none;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;padding:10px 18px;border-radius:8px;margin:10px auto;max-width:1600px;font-size:12px;line-height:1.6}
+  .setup-banner.visible{display:block}
+  .setup-banner code{background:#ffedd5;padding:1px 5px;border-radius:4px;font-size:11px}
+
+  /* --- Monthly trend chart --- */
+  .trend-wrap{max-width:1600px;margin:0 auto 12px;padding:0 16px}
+  .trend-card{background:#fff;border-radius:10px;padding:14px 18px 10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .trend-card h3{font-size:13px;font-weight:600;color:#374151;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+  .trend-card h3 .hint{font-size:11px;font-weight:400;color:#9ca3af}
+  .trend-svg{width:100%;height:auto;max-height:170px;display:block}
+  .trend-bar{fill:#3b82f6;transition:fill .15s}
+  .trend-bar:hover{fill:#1e40af}
+  .trend-label{font-size:10px;fill:#9ca3af}
+  .trend-value{font-size:10px;fill:#1e40af;font-weight:600}
+  .trend-empty{text-align:center;color:#9ca3af;font-size:12px;padding:24px 0}
+
   /* --- Mobile responsive --- */
   @media(max-width:768px){
     .header{padding:16px}
@@ -197,6 +233,9 @@
     table th:nth-child(17).th-sales,table td:nth-child(17).col-sales{display:none}
     /* Make visible rows tappable */
     tr[data-idx]{cursor:pointer}
+    .trend-wrap{padding:0 12px}
+    .trend-card{padding:12px 14px 8px}
+    .trend-svg{max-height:none}
     .leaderboard-wrap{padding:0 12px}
     .unpaid-banner{margin:8px 12px;font-size:12px}
     .modal{width:98%;padding:16px}
@@ -204,6 +243,20 @@
 </style>
 </head>
 <body>
+
+<div class="login-overlay" id="loginOverlay">
+  <form class="login-card" id="loginForm" onsubmit="submitLogin(event)">
+    <h2>销售订单登记</h2>
+    <p class="sub">请输入访问密码</p>
+    <label for="loginPassword">密码</label>
+    <input type="password" id="loginPassword" inputmode="numeric" autocomplete="current-password" placeholder="••••••" autofocus>
+    <label class="login-remember"><input type="checkbox" id="loginRemember" checked> 在本设备保持登录</label>
+    <button type="submit" class="btn btn-primary" id="loginBtn">进入系统</button>
+    <div class="login-err" id="loginErr"></div>
+  </form>
+</div>
+
+<div id="appRoot">
 
 <div class="header">
   <div class="container">
@@ -216,13 +269,16 @@
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         <span id="copyLinkLabel">复制链接</span>
       </button>
+      <button class="btn-logout" onclick="logout()" title="退出登录">退出</button>
     </div>
     <p id="lastUpdate">数据加载中…</p>
   </div>
 </div>
 
+<div class="setup-banner" id="setupBanner"></div>
 <div class="stats" id="stats"></div>
 <div class="unpaid-banner" id="unpaidBanner"></div>
+<div class="trend-wrap" id="trendWrap"></div>
 <div class="leaderboard-wrap" id="leaderboardWrap" style="display:none"></div>
 
 <div class="toolbar">
@@ -456,15 +512,203 @@
   </div>
 </div>
 
+</div><!-- /#appRoot -->
+
 <script>
 const SUPABASE_URL = 'https://cgieubqhafwwprwzerty.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_EDGkPqT_UPcwDD_n3ozuHA_mw_EL0hY';
 const REST = SUPABASE_URL + '/rest/v1/orders';
-const HEADERS = {
-  'apikey': SUPABASE_KEY,
-  'Authorization': 'Bearer ' + SUPABASE_KEY,
-  'Content-Type': 'application/json'
-};
+
+/* ==========================================================================
+   访问控制
+   --------------------------------------------------------------------------
+   两层：
+   1) 页面密码闸门 —— 阻挡随手打开链接的人。密码只以加盐 SHA-256 形式存放，
+      源码里没有明文；但页面是纯静态的，懂技术的人绕过它并不难。
+   2) Supabase 账号鉴权 —— 真正的防线。登录成功后用同一个密码换取数据库
+      JWT，之后所有读写都带这个令牌。配合 supabase/security.sql 里的 RLS
+      策略，没有令牌的请求会被数据库直接拒绝。
+   修改密码：改 AUTH_EMAIL 对应账号的密码，并把新的哈希写入 PASSWORD_HASH
+   （生成方式见 tools/hash-password.js），两处必须一致。
+   ========================================================================== */
+const PASSWORD_SALT = 'sales-order-auth-v1';
+const PASSWORD_HASH = 'EdVKIoPpPtvSH+pvWdfCY6E2pfZ6xLaoJ1qalcsWalI=';
+const AUTH_EMAIL = 'team@sales-order.local';
+const AUTH_STORE_KEY = 'salesOrderSession';
+
+let dbSession = null;   // { access_token, refresh_token, expires_at }
+let dbAuthReady = false; // 数据库账号鉴权是否生效
+
+function HEADERS() {
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + ((dbSession && dbSession.access_token) || SUPABASE_KEY),
+    'Content-Type': 'application/json'
+  };
+}
+
+async function sha256b64(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+}
+
+function readStoredSession() {
+  for (const store of [localStorage, sessionStorage]) {
+    try {
+      const raw = store.getItem(AUTH_STORE_KEY);
+      if (raw) return { data: JSON.parse(raw), store };
+    } catch (e) { /* 隐私模式或存储被禁用 */ }
+  }
+  return null;
+}
+
+function writeStoredSession(session, remember) {
+  const store = remember ? localStorage : sessionStorage;
+  const other = remember ? sessionStorage : localStorage;
+  try { other.removeItem(AUTH_STORE_KEY); } catch (e) {}
+  try { store.setItem(AUTH_STORE_KEY, JSON.stringify(session)); } catch (e) {}
+}
+
+function clearStoredSession() {
+  for (const store of [localStorage, sessionStorage]) {
+    try { store.removeItem(AUTH_STORE_KEY); } catch (e) {}
+  }
+}
+
+// 用密码向 Supabase 换取数据库令牌。项目未建账号时返回 null，此时退回到
+// 仅用 publishable key 访问（功能不变，但数据库层没有保护）。
+async function signInToDatabase(password) {
+  try {
+    const res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: AUTH_EMAIL, password })
+    });
+    if (!res.ok) return null;
+    const d = await res.json();
+    if (!d.access_token) return null;
+    return {
+      access_token: d.access_token,
+      refresh_token: d.refresh_token || '',
+      expires_at: Date.now() + ((d.expires_in || 3600) - 60) * 1000
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+async function refreshDatabaseSession() {
+  if (!dbSession || !dbSession.refresh_token) return false;
+  try {
+    const res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: dbSession.refresh_token })
+    });
+    if (!res.ok) return false;
+    const d = await res.json();
+    if (!d.access_token) return false;
+    dbSession = {
+      access_token: d.access_token,
+      refresh_token: d.refresh_token || dbSession.refresh_token,
+      expires_at: Date.now() + ((d.expires_in || 3600) - 60) * 1000
+    };
+    const stored = readStoredSession();
+    writeStoredSession({ ok: true, db: dbSession }, !!(stored && stored.store === localStorage));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// 令牌快过期时先续期，避免请求打回 401
+async function ensureFreshSession() {
+  if (dbSession && Date.now() >= dbSession.expires_at) {
+    const ok = await refreshDatabaseSession();
+    if (!ok) {
+      dbSession = null;
+      dbAuthReady = false;
+      showLogin('登录已过期，请重新输入密码');
+    }
+  }
+}
+
+function showLogin(message) {
+  const overlay = document.getElementById('loginOverlay');
+  const app = document.getElementById('appRoot');
+  if (overlay) overlay.classList.remove('hidden');
+  if (app) app.classList.remove('ready');
+  const err = document.getElementById('loginErr');
+  if (err) err.textContent = message || '';
+  const input = document.getElementById('loginPassword');
+  if (input) { input.value = ''; setTimeout(() => input.focus(), 50); }
+}
+
+function enterApp() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('appRoot').classList.add('ready');
+  const banner = document.getElementById('setupBanner');
+  if (banner && !dbAuthReady) {
+    banner.innerHTML = '⚠️ 数据库账号鉴权未生效：当前仅有页面密码保护，数据仍可被绕过页面直接读写。' +
+      '请按 <code>README.md</code> 的说明执行 <code>supabase/security.sql</code> 并创建登录账号。';
+    banner.classList.add('visible');
+  } else if (banner) {
+    banner.classList.remove('visible');
+  }
+  loadData();
+}
+
+async function submitLogin(event) {
+  if (event) event.preventDefault();
+  const input = document.getElementById('loginPassword');
+  const err = document.getElementById('loginErr');
+  const btn = document.getElementById('loginBtn');
+  const password = (input.value || '').trim();
+  if (!password) { err.textContent = '请输入密码'; return; }
+
+  btn.disabled = true;
+  btn.textContent = '验证中…';
+  try {
+    const hash = await sha256b64(PASSWORD_SALT + password);
+    if (hash !== PASSWORD_HASH) {
+      err.textContent = '密码错误';
+      input.value = '';
+      input.focus();
+      return;
+    }
+    dbSession = await signInToDatabase(password);
+    dbAuthReady = !!dbSession;
+    const remember = document.getElementById('loginRemember').checked;
+    writeStoredSession({ ok: true, db: dbSession }, remember);
+    err.textContent = '';
+    enterApp();
+  } catch (e) {
+    err.textContent = '登录失败：' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '进入系统';
+  }
+}
+
+function logout() {
+  if (!confirm('确认退出登录？')) return;
+  clearStoredSession();
+  dbSession = null;
+  dbAuthReady = false;
+  location.reload();
+}
+
+async function bootstrap() {
+  const stored = readStoredSession();
+  if (!stored || !stored.data || !stored.data.ok) { showLogin(''); return; }
+  dbSession = stored.data.db || null;
+  if (dbSession && Date.now() >= dbSession.expires_at) {
+    const refreshed = await refreshDatabaseSession();
+    if (!refreshed) { clearStoredSession(); showLogin('登录已过期，请重新输入密码'); return; }
+  }
+  dbAuthReady = !!dbSession;
+  enterApp();
+}
 
 // 销售员名单（如需新增成员，在此数组追加即可）
 const SALES_TEAM = ['大卫', '格顺', '阿咪', '东海'];
@@ -475,6 +719,13 @@ const CURRENT_SALES_PERSON = (new URLSearchParams(location.search).get('user') |
 let orders = [];
 let editingIdx = -1;
 let saving = false;
+
+// 本地日期格式化：避免 toISOString() 因 UTC 时区导致日期偏移一天
+function ymd(d) {
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+function todayStr() { return ymd(new Date()); }
 
 function toRow(o) {
   return {
@@ -521,20 +772,25 @@ function fromRow(r) {
 
 async function loadData() {
   document.getElementById('lastUpdate').textContent = '数据加载中…';
+  await ensureFreshSession();
   try {
-    const res = await fetch(REST + '?select=*&order=apply_date.desc.nullslast,created_at.desc', { headers: HEADERS });
+    const res = await fetch(REST + '?select=*&order=apply_date.desc.nullslast,created_at.desc', { headers: HEADERS() });
+    if (res.status === 401 || res.status === 403) {
+      throw new Error('无访问权限（' + res.status + '），请重新登录或检查 Supabase RLS 配置');
+    }
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
     orders = rows.map(fromRow);
   } catch (e) {
     orders = [];
-    document.getElementById('lastUpdate').textContent = '加载失败：' + e.message + ' (请检查网络)';
-    renderStats(); renderTable();
+    document.getElementById('lastUpdate').textContent = '加载失败：' + e.message;
+    renderStats(); renderTrend(); renderTable();
     return;
   }
   refreshFilterOptions();
   initSalesPersonSwitcher();
   renderStats();
+  renderTrend();
   renderTable();
   const mineCount = orders.filter(o => o.salesPerson === CURRENT_SALES_PERSON).length;
   document.getElementById('lastUpdate').textContent =
@@ -550,7 +806,7 @@ function refreshFilterOptions() {
     orders.filter(o => isAll || o.salesPerson === CURRENT_SALES_PERSON).map(o => o.province).filter(Boolean)
   )).sort((a,b) => a.localeCompare(b,'zh-CN'));
   sel.innerHTML = '<option value="">全部省份</option>' +
-    provinces.map(p => `<option value="${p}">${p}</option>`).join('');
+    provinces.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
   if (provinces.includes(prev)) sel.value = prev;
 }
 
@@ -736,7 +992,7 @@ function renderTable() {
     const ri = orders.indexOf(o);
     const unpaidCls = !o.paybackDate ? ' unpaid-row' : '';
     return '<tr class="' + unpaidCls.trim() + '" data-idx="' + ri + '" onclick="showRowDetail(' + ri + ')">' +
-      '<td class="nowrap">' + (ri+1) + '</td>' +
+      '<td class="nowrap">' + (i+1) + '</td>' +
       '<td class="nowrap">' + esc(o.applyDate) + '</td>' +
       '<td class="nowrap">' + esc(o.paybackDate||'-') + '</td>' +
       '<td class="col-name nowrap">' + esc(o.name) + '</td>' +
@@ -763,7 +1019,9 @@ function renderTable() {
   const sumInstall = filtered.reduce((s,o)=>s+(Number(o.installFee)||0),0);
   const sumPkg = filtered.reduce((s,o)=>s+(Number(o.packageFee)||0),0);
   const sumCom = filtered.reduce((s,o)=>s+(Number(o.commission)||0),0);
-  const baseCols = isAll ? 11 : 10;
+  // 表头前 10 列（序号…时限）固定，其后为 安装费/套餐费/佣金 三列，
+  // 尾部为 佣金率/身份证号/地址/[销售员]/操作
+  const baseCols = 10;
   const tailCols = isAll ? 5 : 4;
   document.getElementById('totalRow').innerHTML = '<tr class="total-row">' +
     '<td colspan="' + baseCols + '">合计 (' + filtered.length + '笔)</td>' +
@@ -788,7 +1046,7 @@ function openModal(idx) {
     f_commissionRate.value=o.commissionRate ? Math.round(o.commissionRate*100) : ''; f_idCard.value=o.idCard||'';
     f_address.value=o.address||'';
   } else {
-    f_applyDate.value=new Date().toISOString().slice(0,10);
+    f_applyDate.value=todayStr();
     f_paybackDate.value=''; f_name.value=''; f_phone.value='';
     f_province.value=''; f_city.value='';
     f_carrier.value='联通'; f_package.value='300m'; f_duration.value='1年';
@@ -804,6 +1062,26 @@ async function saveOrder() {
   if (saving) return;
   const name=f_name.value.trim(), phone=f_phone.value.trim(), pkgFee=Number(f_packageFee.value)||0;
   if(!name||!phone||!pkgFee){alert('请填写姓名、手机号和套餐费');return}
+
+  // 字段校验
+  if (!/^1[3-9]\d{9}$/.test(phone)) { alert('手机号格式不正确，应为 11 位数字'); f_phone.focus(); return; }
+  const idCard = f_idCard.value.trim().toUpperCase();
+  if (idCard && !/^\d{17}[\dX]$/.test(idCard)) { alert('身份证号格式不正确，应为 18 位'); f_idCard.focus(); return; }
+  const ratePctRaw = f_commissionRate.value.trim();
+  if (ratePctRaw && (Number(ratePctRaw) < 0 || Number(ratePctRaw) > 100)) {
+    alert('佣金率应在 0–100 之间'); f_commissionRate.focus(); return;
+  }
+  if (f_paybackDate.value && f_applyDate.value && f_paybackDate.value < f_applyDate.value) {
+    alert('回款日期不能早于办理日期'); f_paybackDate.focus(); return;
+  }
+
+  // 新增时提醒重复手机号（同一销售员名下）
+  if (editingIdx < 0) {
+    const dup = orders.find(o => o.phone === phone &&
+      (CURRENT_SALES_PERSON === 'ALL' || o.salesPerson === CURRENT_SALES_PERSON));
+    if (dup && !confirm('手机号 ' + phone + ' 已存在（' + (dup.name||'') + ' · ' +
+        (dup.applyDate||'无日期') + '），仍要继续新增吗？')) return;
+  }
   const commission=Number(f_commission.value)||0;
   let ratePct=Number(f_commissionRate.value);
   let rate = ratePct ? ratePct/100 : (pkgFee>0 ? commission/pkgFee : 0);
@@ -814,24 +1092,25 @@ async function saveOrder() {
     carrier:f_carrier.value, package:f_package.value, duration:f_duration.value,
     installFee:Number(f_installFee.value)||0, packageFee:pkgFee,
     commission, commissionRate:rate,
-    idCard:f_idCard.value.trim(), address:f_address.value.trim(),
+    idCard, address:f_address.value.trim(),
     salesPerson: editingIdx >= 0 ? orders[editingIdx].salesPerson : CURRENT_SALES_PERSON
   };
 
   saving = true;
+  await ensureFreshSession();
   try {
     if (editingIdx >= 0) {
       const id = orders[editingIdx].id;
       const res = await fetch(REST + '?id=eq.' + encodeURIComponent(id), {
         method: 'PATCH',
-        headers: HEADERS,
+        headers: HEADERS(),
         body: JSON.stringify(toRow(order))
       });
       if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
     } else {
       const res = await fetch(REST, {
         method: 'POST',
-        headers: HEADERS,
+        headers: HEADERS(),
         body: JSON.stringify(toRow(order))
       });
       if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
@@ -848,12 +1127,15 @@ async function saveOrder() {
 function editOrder(i){openModal(i)}
 
 async function deleteOrder(i){
-  if(!confirm('确认删除该订单？'))return;
-  const id = orders[i].id;
+  const o = orders[i];
+  if(!o)return;
+  if(!confirm('确认删除「' + (o.name||'该订单') + ' · ' + (o.phone||'') + '」？此操作不可撤销。'))return;
+  const id = o.id;
+  await ensureFreshSession();
   try {
     const res = await fetch(REST + '?id=eq.' + encodeURIComponent(id), {
       method: 'DELETE',
-      headers: HEADERS
+      headers: HEADERS()
     });
     if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
     await loadData();
@@ -864,14 +1146,14 @@ async function deleteOrder(i){
 
 function exportCSV(){
   const list = getFilteredOrders();
-  const h='序号,办理日期,回款日期,姓名,手机号,省份,城市,运营商,套餐,时限,安装费,套餐费,佣金,佣金率,身份证号,地址\n';
-  const rows=list.map((o,i)=>[i+1,o.applyDate,o.paybackDate,o.name,o.phone,o.province,o.city,o.carrier,o.package,o.duration,o.installFee,o.packageFee,o.commission,Math.round((Number(o.commissionRate)||0)*100)+'%',o.idCard,o.address].map(v=>`"${v||''}"`).join(',')).join('\n');
+  // 表头与导入端的别名表一致，导出的文件可以直接改完再导回来
+  const h='序号,办理日期,回款日期,姓名,手机号,省份,城市,运营商,套餐,时限,安装费,套餐费,佣金,佣金率,身份证号,地址,销售员\n';
+  const cell=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const rows=list.map((o,i)=>[i+1,o.applyDate,o.paybackDate,o.name,o.phone,o.province,o.city,o.carrier,o.package,o.duration,o.installFee,o.packageFee,o.commission,Math.round((Number(o.commissionRate)||0)*100)+'%',o.idCard,o.address,o.salesPerson].map(cell).join(',')).join('\n');
   const blob=new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=CURRENT_SALES_PERSON+'_销售订单_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  a.download=CURRENT_SALES_PERSON+'_销售订单_'+todayStr()+'.csv';a.click();
 }
-
-loadData();
 
 const CITY_PROVINCE_MAP = {
   '北京':'北京','上海':'上海','天津':'天津','重庆':'重庆',
@@ -1013,7 +1295,7 @@ function parseAndFill() {
     .join('');
   preview.style.display = 'block';
 
-  f_applyDate.value = new Date().toISOString().slice(0,10);
+  f_applyDate.value = todayStr();
   f_paybackDate.value = '';
   f_name.value = parsed.name;
   f_phone.value = parsed.phone;
@@ -1102,16 +1384,122 @@ function showRowDetail(idx) {
     ['地址', o.address || '-'],
     ['销售员', o.salesPerson || '-'],
   ];
+  const paidBtn = o.paybackDate ? '' :
+    '<button class="btn btn-sm btn-paid" onclick="markPaid(' + idx + ')">✔ 标记回款</button>';
   card.innerHTML = '<h3>订单详情 <button class="close-btn" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\')">&times;</button></h3>' +
     fields.map(function(f) {
       return '<div class="detail-row"><span class="dl">' + f[0] + '</span><span class="dv">' + esc(f[1]) + '</span></div>';
     }).join('') +
     '<div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">' +
+    paidBtn +
     '<button class="btn btn-sm btn-cancel" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\');editOrder(' + idx + ')">编辑</button>' +
     '<button class="btn btn-sm btn-danger" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\');deleteOrder(' + idx + ')">删除</button>' +
     '</div>';
   document.getElementById('detailOverlay').classList.add('active');
 }
+
+/* ========== 近 12 个月佣金趋势 ========== */
+function renderTrend() {
+  const wrap = document.getElementById('trendWrap');
+  if (!wrap) return;
+  const isAll = CURRENT_SALES_PERSON === 'ALL';
+  const mine = isAll ? orders : orders.filter(o => o.salesPerson === CURRENT_SALES_PERSON);
+
+  // 最近 12 个自然月（含当月）
+  const now = new Date();
+  const buckets = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    buckets.push({ key, label: (d.getMonth() + 1) + '月', commission: 0, count: 0 });
+  }
+  const index = new Map(buckets.map(b => [b.key, b]));
+  mine.forEach(o => {
+    if (!o.applyDate) return;
+    const b = index.get(String(o.applyDate).slice(0, 7));
+    if (b) { b.commission += Number(o.commission) || 0; b.count++; }
+  });
+
+  const max = Math.max(...buckets.map(b => b.commission));
+  if (max <= 0) {
+    wrap.innerHTML = '<div class="trend-card"><h3>近 12 个月佣金趋势</h3>' +
+      '<div class="trend-empty">最近 12 个月暂无订单数据</div></div>';
+    return;
+  }
+
+  // SVG 按 viewBox 等比缩放：窄屏上像素被压缩，所以字号和留白都用
+  // 用户单位放大一档，否则月份标签会糊成一片或与柱子重叠。
+  const narrow = window.innerWidth <= 768;
+  const W = 1000;
+  const H = narrow ? 170 : 110;
+  const padBottom = narrow ? 46 : 18;
+  const padTop = narrow ? 18 : 14;
+  const labelSize = narrow ? 26 : 10;
+  const slot = W / buckets.length;
+  const barW = slot * 0.56;
+  const bars = buckets.map((b, i) => {
+    const h = b.commission > 0 ? Math.max(2, (b.commission / max) * (H - padTop - padBottom)) : 0;
+    const x = i * slot + (slot - barW) / 2;
+    const y = H - padBottom - h;
+    // 窄屏放不下金额标注，只留月份
+    const valueLabel = (b.commission > 0 && !narrow)
+      ? '<text class="trend-value" x="' + (x + barW / 2) + '" y="' + (y - 4) + '" text-anchor="middle">' +
+        (b.commission >= 10000 ? (b.commission / 10000).toFixed(1) + '万' : b.commission) + '</text>'
+      : '';
+    return '<g>' +
+      '<rect class="trend-bar" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) +
+        '" height="' + h.toFixed(1) + '" rx="3"><title>' + b.key + '：' + b.count + ' 笔 / ¥' +
+        b.commission.toLocaleString() + '</title></rect>' +
+      valueLabel +
+      '<text class="trend-label" x="' + (x + barW / 2) + '" y="' + (H - padBottom + labelSize + 4) +
+        '" style="font-size:' + labelSize + 'px" text-anchor="middle">' + b.label + '</text>' +
+      '</g>';
+  }).join('');
+
+  const sum = buckets.reduce((s, b) => s + b.commission, 0);
+  wrap.innerHTML = '<div class="trend-card">' +
+    '<h3>近 12 个月佣金趋势<span class="hint">合计 ¥' + sum.toLocaleString() + ' · 峰值 ¥' + max.toLocaleString() + '</span></h3>' +
+    '<svg class="trend-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="近 12 个月佣金趋势">' +
+    '<line x1="0" y1="' + (H - padBottom) + '" x2="' + W + '" y2="' + (H - padBottom) + '" stroke="#e5e7eb" stroke-width="1"/>' +
+    bars + '</svg></div>';
+}
+
+// 横竖屏或窗口尺寸切换时重画，让窄屏/宽屏两套排版都能生效
+let trendResizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(trendResizeTimer);
+  trendResizeTimer = setTimeout(renderTrend, 200);
+});
+
+/* ========== 一键标记回款 ========== */
+async function markPaid(idx) {
+  const o = orders[idx];
+  if (!o || o.paybackDate) return;
+  if (!confirm('确认将「' + (o.name || '该订单') + '」标记为今日（' + todayStr() + '）回款？')) return;
+  await ensureFreshSession();
+  try {
+    const res = await fetch(REST + '?id=eq.' + encodeURIComponent(o.id), {
+      method: 'PATCH',
+      headers: HEADERS(),
+      body: JSON.stringify({ payback_date: todayStr() })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
+    document.getElementById('detailOverlay').classList.remove('active');
+    await loadData();
+  } catch (e) {
+    alert('标记失败：' + e.message);
+  }
+}
+
+/* ========== Esc 关闭弹窗 ========== */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const ids = ['detailOverlay', 'logOverlay', 'csvImportOverlay', 'smartOverlay', 'modalOverlay'];
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (el && el.classList.contains('active')) { el.classList.remove('active'); return; }
+  }
+});
 
 /* ========== 功能 4：时间范围筛选 ========== */
 function setTimeRange(range) {
@@ -1120,7 +1508,7 @@ function setTimeRange(range) {
   const from = document.getElementById('dateFrom');
   const to = document.getElementById('dateTo');
   const today = new Date();
-  const fmt = d => d.toISOString().slice(0, 10);
+  const fmt = ymd;
 
   if (range === 'all') {
     from.value = ''; to.value = '';
@@ -1150,12 +1538,136 @@ function onCustomDateChange() {
   renderTable();
 }
 
-/* ========== 功能 3：CSV 批量导入 ========== */
-let pendingCSVRows = [];
+/* ========== 功能 3：CSV 批量导入 ==========
+   按表头名称匹配列，因此列顺序变化、多余列、缺列都不会导致数据错位。 */
+let pendingImport = { rows: [], skipped: 0, invalid: 0 };
+
+// 表头别名 → 内部字段
+const CSV_HEADER_ALIASES = {
+  '办理日期': 'applyDate', '下单日期': 'applyDate', '日期': 'applyDate',
+  '回款日期': 'paybackDate', '回款': 'paybackDate',
+  '姓名': 'name', '客户': 'name', '客户姓名': 'name',
+  '手机号': 'phone', '手机': 'phone', '电话': 'phone', '联系方式': 'phone',
+  '省份': 'province', '省': 'province',
+  '城市': 'city', '市': 'city',
+  '运营商': 'carrier',
+  '套餐': 'package', '套餐名称': 'package',
+  '时限': 'duration', '期限': 'duration',
+  '安装费': 'installFee',
+  '套餐费': 'packageFee', '金额': 'packageFee',
+  '佣金': 'commission',
+  '佣金率': 'commissionRate',
+  '身份证号': 'idCard', '身份证': 'idCard',
+  '地址': 'address', '办理地址': 'address', '安装地址': 'address',
+  '销售员': 'salesPerson', '业务员': 'salesPerson'
+};
+
+// 支持引号内的逗号与换行，以及 "" 转义
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++; }
+        else inQ = false;
+      } else cur += c;
+    } else if (c === '"') {
+      inQ = true;
+    } else if (c === ',') {
+      row.push(cur); cur = '';
+    } else if (c === '\n') {
+      row.push(cur); rows.push(row); row = []; cur = '';
+    } else if (c !== '\r') {
+      cur += c;
+    }
+  }
+  row.push(cur);
+  rows.push(row);
+  return rows.filter(r => r.some(cell => cell.trim() !== ''));
+}
+
+function normalizeDate(v) {
+  const s = (v || '').trim();
+  if (!s) return null;
+  let m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+  if (m) return m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');
+  m = s.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (m) return m[1] + '-' + m[2] + '-' + m[3];
+  return null;
+}
+
+function normalizeRate(v) {
+  const s = String(v == null ? '' : v).replace('%', '').trim();
+  if (!s) return 0;
+  const n = Number(s);
+  if (!isFinite(n) || n <= 0) return 0;
+  // 大于等于 1 视为百分数（30 → 0.3），小于 1 视为小数（0.3 → 0.3）
+  return n >= 1 ? Math.round(n) / 100 : Math.round(n * 10000) / 10000;
+}
 
 function triggerCSVImport() {
   document.getElementById('csvFileInput').value = '';
   document.getElementById('csvFileInput').click();
+}
+
+function buildImportPlan(text) {
+  const table = parseCSV(String(text).replace(/^﻿/, ''));
+  if (table.length < 2) return { error: 'CSV 文件为空或没有数据行' };
+
+  const header = table[0].map(h => h.trim());
+  const fieldOf = header.map(h => CSV_HEADER_ALIASES[h] || '');
+  if (!fieldOf.includes('name') || !fieldOf.includes('phone')) {
+    return { error: '未能识别表头：CSV 必须包含「姓名」和「手机号」两列。\n可先用「导出 CSV」得到标准模板再填写。' };
+  }
+
+  const existingKeys = new Set(
+    orders.filter(o => o.phone && o.applyDate).map(o => o.phone + '|' + o.applyDate)
+  );
+  const rows = [], preview = [];
+  let skipped = 0, invalid = 0;
+
+  for (const cells of table.slice(1)) {
+    const rec = {};
+    fieldOf.forEach((f, i) => { if (f) rec[f] = (cells[i] || '').trim(); });
+    const phone = (rec.phone || '').replace(/\D/g, '');
+    if (!rec.name || !phone) { invalid++; continue; }
+    const applyDate = normalizeDate(rec.applyDate);
+    const key = phone + '|' + (applyDate || '');
+    if (applyDate && existingKeys.has(key)) { skipped++; continue; }
+    if (applyDate) existingKeys.add(key);
+
+    const salesPerson = rec.salesPerson ||
+      (CURRENT_SALES_PERSON === 'ALL' ? '未分配' : CURRENT_SALES_PERSON);
+    rows.push({
+      apply_date:      applyDate,
+      payback_date:    normalizeDate(rec.paybackDate),
+      name:            rec.name,
+      phone:           phone,
+      province:        rec.province || '',
+      city:            rec.city || '',
+      carrier:         rec.carrier || '',
+      package:         rec.package || '',
+      duration:        rec.duration || '',
+      install_fee:     Number(rec.installFee) || 0,
+      package_fee:     Number(rec.packageFee) || 0,
+      commission:      Number(rec.commission) || 0,
+      commission_rate: normalizeRate(rec.commissionRate),
+      id_card:         (rec.idCard || '').toUpperCase(),
+      address:         rec.address || '',
+      sales_person:    salesPerson
+    });
+    if (preview.length < 5) {
+      preview.push([rec.name, phone, applyDate || '—', rec.carrier || '—',
+                    rec.package || '—', rec.commission || '0', salesPerson]);
+    }
+  }
+
+  return {
+    rows, preview, skipped, invalid,
+    unmapped: header.filter((h, i) => !fieldOf[i])
+  };
 }
 
 function handleCSVFile(input) {
@@ -1163,99 +1675,76 @@ function handleCSVFile(input) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    const text = e.target.result.replace(/^\uFEFF/, '');
-    const lines = text.split(/\r?\n/).filter(l => l.trim());
-    if (lines.length < 2) { alert('CSV 文件为空或格式不正确'); return; }
-    const parseRow = line => {
-      const cells = [];
-      let cur = '', inQ = false;
-      for (let i = 0; i < line.length; i++) {
-        const c = line[i];
-        if (c === '"') { inQ = !inQ; }
-        else if (c === ',' && !inQ) { cells.push(cur); cur = ''; }
-        else cur += c;
-      }
-      cells.push(cur);
-      return cells;
-    };
-    const header = parseRow(lines[0]);
-    const rows = lines.slice(1).map(parseRow);
-    pendingCSVRows = rows;
+    const plan = buildImportPlan(e.target.result);
+    if (plan.error) { alert(plan.error); return; }
+    pendingImport = { rows: plan.rows, skipped: plan.skipped, invalid: plan.invalid };
 
-    const preview = rows.slice(0, 5).map(r => '<tr>' + r.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>').join('');
     document.getElementById('csvImportContent').innerHTML =
-      '<p style="margin-bottom:12px;font-size:13px">识别到 <b>' + rows.length + '</b> 条待导入记录：</p>' +
-      '<div style="overflow-x:auto;margin-bottom:12px"><table style="font-size:12px">' +
-      '<thead><tr>' + header.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr></thead>' +
-      '<tbody>' + preview + '</tbody></table></div>' +
-      (rows.length > 5 ? '<p style="font-size:12px;color:#6b7280">… 还有 ' + (rows.length - 5) + ' 条未显示</p>' : '') +
-      '<p style="font-size:12px;color:#dc2626;margin-top:8px">提示：若与现有记录重复（按 手机号+办理日期 判断）将自动跳过</p>';
-    document.getElementById('csvConfirmBtn').disabled = false;
+      '<p class="csv-import-info">可导入 <strong>' + plan.rows.length + '</strong> 条' +
+        (plan.skipped ? '，跳过重复 <strong>' + plan.skipped + '</strong> 条' : '') +
+        (plan.invalid ? '，缺少姓名或手机号 <strong>' + plan.invalid + '</strong> 条' : '') + '</p>' +
+      (plan.unmapped.length ? '<p style="font-size:12px;color:#9ca3af">未识别的列（忽略）：' +
+        esc(plan.unmapped.join('、')) + '</p>' : '') +
+      (plan.rows.length
+        ? '<div style="overflow-x:auto;margin:10px 0"><table class="csv-preview-table">' +
+          '<thead><tr><th>姓名</th><th>手机号</th><th>办理日期</th><th>运营商</th><th>套餐</th><th>佣金</th><th>销售员</th></tr></thead>' +
+          '<tbody>' + plan.preview.map(r => '<tr>' + r.map(c => '<td>' + esc(String(c)) + '</td>').join('') + '</tr>').join('') +
+          '</tbody></table></div>' +
+          (plan.rows.length > 5 ? '<p style="font-size:12px;color:#6b7280">… 还有 ' + (plan.rows.length - 5) + ' 条未显示</p>' : '')
+        : '<p style="font-size:13px;color:#dc2626;margin-top:8px">没有可导入的新记录。</p>') +
+      '<p style="font-size:12px;color:#6b7280;margin-top:8px">重复判定依据：手机号 + 办理日期</p>';
+    document.getElementById('csvConfirmBtn').disabled = plan.rows.length === 0;
     document.getElementById('csvImportOverlay').classList.add('active');
   };
+  reader.onerror = () => alert('读取文件失败，请重试');
   reader.readAsText(file, 'utf-8');
 }
 
 function closeCSVImport() {
   document.getElementById('csvImportOverlay').classList.remove('active');
-  pendingCSVRows = [];
+  pendingImport = { rows: [], skipped: 0, invalid: 0 };
 }
 
 async function confirmCSVImport() {
   const btn = document.getElementById('csvConfirmBtn');
+  const rows = pendingImport.rows;
+  const { skipped, invalid } = pendingImport;
+  if (!rows.length) return;
   btn.disabled = true;
-  btn.textContent = '导入中…';
 
-  const existingKeys = new Set(orders.filter(o => o.phone && o.applyDate).map(o => o.phone + '|' + o.applyDate));
-  const newRows = [];
-  for (const cells of pendingCSVRows) {
-    const [_, applyDate, paybackDate, name, phone, province, city, carrier, pkg, duration,
-           installFee, packageFee, commission, commissionRate, idCard, address] = cells;
-    if (!name || !phone) continue;
-    const key = phone.trim() + '|' + (applyDate || '').slice(0, 10);
-    if (existingKeys.has(key)) continue;
-    existingKeys.add(key);
-
-    const rateStr = (commissionRate || '').replace('%', '').trim();
-    const rateNum = Number(rateStr) || 0;
-    newRows.push({
-      apply_date:      (applyDate || '').slice(0, 10) || null,
-      payback_date:    (paybackDate || '').slice(0, 10) || null,
-      name: name.trim(), phone: phone.trim(),
-      province: (province || '').trim(), city: (city || '').trim(),
-      carrier: (carrier || '').trim(), package: (pkg || '').trim(),
-      duration: (duration || '').trim(),
-      install_fee:     Number(installFee) || 0,
-      package_fee:     Number(packageFee) || 0,
-      commission:      Number(commission) || 0,
-      commission_rate: rateNum >= 1 ? rateNum / 100 : rateNum,
-      id_card: (idCard || '').trim(),
-      address: (address || '').trim(),
-      sales_person: CURRENT_SALES_PERSON === 'ALL' ? '未分配' : CURRENT_SALES_PERSON
-    });
-  }
-
-  let imported = 0, failed = 0;
-  for (const row of newRows) {
+  await ensureFreshSession();
+  const CHUNK = 100;   // 分批提交，避免一条一条发请求
+  let imported = 0;
+  const errors = [];
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    btn.textContent = '导入中… ' + Math.min(i + chunk.length, rows.length) + '/' + rows.length;
     try {
-      const res = await fetch(REST, { method: 'POST', headers: HEADERS, body: JSON.stringify(row) });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      imported++;
-    } catch { failed++; }
+      const res = await fetch(REST, { method: 'POST', headers: HEADERS(), body: JSON.stringify(chunk) });
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + (await res.text()).slice(0, 200));
+      imported += chunk.length;
+    } catch (e) {
+      errors.push('第 ' + (i + 1) + '–' + (i + chunk.length) + ' 条：' + e.message);
+    }
   }
+
   closeCSVImport();
+  btn.textContent = '确认导入';
   await loadData();
-  alert('导入完成：成功 ' + imported + ' 条' + (failed ? '，失败 ' + failed + ' 条' : '') +
-        (pendingCSVRows.length - newRows.length > 0 ? '，跳过重复 ' + (pendingCSVRows.length - newRows.length) + ' 条' : ''));
+  alert('导入完成：成功 ' + imported + ' 条' +
+        (skipped ? '，跳过重复 ' + skipped + ' 条' : '') +
+        (invalid ? '，无效 ' + invalid + ' 条' : '') +
+        (errors.length ? '\n\n失败：\n' + errors.join('\n') : ''));
 }
 
 /* ========== 功能 7：操作日志 ========== */
-function openLogViewer() {
+async function openLogViewer() {
   document.getElementById('logContent').innerHTML = '<div class="log-empty">加载中…</div>';
   document.getElementById('logOverlay').classList.add('active');
+  await ensureFreshSession();
   const url = SUPABASE_URL + '/rest/v1/order_logs?select=*&order=created_at.desc&limit=50' +
     (CURRENT_SALES_PERSON !== 'ALL' ? '&actor=eq.' + encodeURIComponent(CURRENT_SALES_PERSON) : '');
-  fetch(url, { headers: HEADERS })
+  fetch(url, { headers: HEADERS() })
     .then(r => r.json())
     .then(rows => {
       if (!rows || rows.length === 0) {
@@ -1315,6 +1804,9 @@ function renderLogRow(row) {
     details +
     '</div>';
 }
+
+/* ========== 启动 ========== */
+bootstrap();
 </script>
 </body>
 </html>
