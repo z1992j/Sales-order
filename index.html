@@ -250,28 +250,6 @@
                   padding:9px 18px;border-radius:8px;margin:10px auto;max-width:1600px;font-size:12px}
   .offline-banner.visible{display:block}
 
-  /* --- Mobile card list --- */
-  .card-list{display:none;max-width:1600px;margin:0 auto 32px;padding:0 12px}
-  .order-card{background:#fff;border-radius:12px;padding:13px 15px;margin-bottom:9px;
-              box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;border-left:3px solid transparent}
-  .order-card:active{background:#f8fafc}
-  .order-card.unpaid{border-left-color:#ef4444;background:#fffbfb}
-  .oc-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-  .oc-name{font-size:15px;font-weight:600;color:#111827}
-  .oc-commission{font-size:16px;font-weight:700;color:#16a34a;white-space:nowrap}
-  .oc-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:7px;font-size:12px;color:#6b7280}
-  .oc-meta .dot{color:#d1d5db}
-  .oc-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:9px;
-             padding-top:8px;border-top:1px solid #f3f4f6;font-size:12px}
-  .oc-date{color:#9ca3af}
-  .oc-status{font-weight:600;padding:2px 9px;border-radius:999px;font-size:11px}
-  .oc-status.paid{background:#dcfce7;color:#16a34a}
-  .oc-status.unpaid{background:#fee2e2;color:#dc2626}
-  .card-summary{background:#f0f9ff;border:1px solid #bfdbfe;border-radius:10px;padding:11px 15px;
-                margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
-  .card-summary .cs-label{color:#1e40af;font-weight:600}
-  .card-summary .cs-value{font-weight:700;color:#16a34a}
-  .card-empty{text-align:center;padding:40px 16px;color:#9ca3af;font-size:13px}
 
   /* --- Mobile responsive --- */
   @media(max-width:768px){
@@ -291,17 +269,27 @@
     .time-filter .pill-group{flex-wrap:wrap}
     .form-grid{grid-template-columns:1fr}
     .form-group.span2,.form-group.span3{grid-column:1/-1}
-    .table-wrap{padding:0 8px}
-    /* Hide secondary columns on mobile: keep 序号/姓名/手机/省份/城市/运营商/套餐/佣金 */
-    table th:nth-child(2),table td:nth-child(2),   /* 办理日期 */
-    table th:nth-child(3),table td:nth-child(3),   /* 回款日期 */
-    table th:nth-child(10),table td:nth-child(10), /* 时限 */
-    table th:nth-child(11),table td:nth-child(11), /* 安装费 */
-    table th:nth-child(12),table td:nth-child(12), /* 套餐费 */
-    table th:nth-child(14),table td:nth-child(14), /* 佣金率 */
-    table th:nth-child(15),table td:nth-child(15), /* 身份证号 */
-    table th:nth-child(16),table td:nth-child(16), /* 地址 */
-    table th:nth-child(17).th-sales,table td:nth-child(17).col-sales{display:none}
+    /* 手机上保留表格，做紧凑处理：页面整体滚动，不做内层滚动 */
+    .table-wrap{padding:0 8px;max-height:none;min-height:0}
+    .table-wrap table{font-size:12px}
+    .table-wrap th{padding:9px 5px;font-size:11px}
+    .table-wrap td{padding:9px 5px;font-size:12px;line-height:1.4}
+    .table-wrap .badge{padding:1px 6px;font-size:10px}
+    .table-wrap .btn-sm{padding:4px 9px;font-size:11px}
+    /* 只保留 姓名/手机/省份/城市/运营商/套餐/佣金，其余收进详情弹窗。
+       选择器限定在 .table-wrap 内，否则会误伤 ALL 视图的业绩榜表格。 */
+    .table-wrap thead th:first-child,.table-wrap tbody td:first-child, /* 序号 */
+    .table-wrap th:nth-child(2),.table-wrap td:nth-child(2),   /* 办理日期 */
+    .table-wrap th:nth-child(3),.table-wrap td:nth-child(3),   /* 回款日期 */
+    .table-wrap th:nth-child(10),.table-wrap td:nth-child(10), /* 时限 */
+    .table-wrap th:nth-child(11),.table-wrap td:nth-child(11), /* 安装费 */
+    .table-wrap th:nth-child(12),.table-wrap td:nth-child(12), /* 套餐费 */
+    .table-wrap th:nth-child(14),.table-wrap td:nth-child(14), /* 佣金率 */
+    .table-wrap th:nth-child(15),.table-wrap td:nth-child(15), /* 身份证号 */
+    .table-wrap th:nth-child(16),.table-wrap td:nth-child(16), /* 地址 */
+    .table-wrap th:nth-child(17).th-sales,.table-wrap td:nth-child(17).col-sales,
+    /* 操作列：点整行即可打开详情，编辑删除都在里面，手机上不必单列 */
+    .table-wrap thead th:last-child,.table-wrap tbody td:last-child{display:none}
     /* Make visible rows tappable */
     tr[data-idx]{cursor:pointer}
     .trend-wrap{padding:0 12px}
@@ -311,9 +299,6 @@
     .trend-card h3{font-size:13px}
     .trend-card h3 .hint{order:3;width:100%;margin-left:0}
     .trend-toggle{margin-left:auto}
-    /* 手机上表格换成卡片列表，不再横向滚动 */
-    .table-wrap{display:none}
-    .card-list{display:block}
     .leaderboard-wrap{padding:0 12px}
     .modal{width:98%;padding:16px}
   }
@@ -461,8 +446,6 @@
   </table>
   <div class="empty" id="emptyMsg" style="display:none;">暂无订单数据</div>
 </div>
-
-<div class="card-list" id="cardList"></div>
 
 <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
@@ -1209,7 +1192,6 @@ function renderTable() {
     '</tr>';
   }).join('');
 
-  renderCards(filtered);
   refreshFilterIndicator();
 
   const sumInstall = filtered.reduce((s,o)=>s+(Number(o.installFee)||0),0);
@@ -1245,53 +1227,6 @@ function hideOfflineBanner() {
 
 // 网络恢复后自动重新拉取
 window.addEventListener('online', () => { if (usingCachedData) loadData(); });
-
-/* ========== 手机端卡片列表 ==========
-   手机上表格要么横向滚动、要么砍掉一半列，两种都难用。
-   改成一屏能读完的卡片，点开仍走原来的详情弹窗。 */
-function renderCards(filtered) {
-  const wrap = document.getElementById('cardList');
-  if (!wrap) return;
-  const isAll = CURRENT_SALES_PERSON === 'ALL';
-
-  if (!filtered.length) {
-    wrap.innerHTML = '<div class="card-empty">没有符合条件的订单</div>';
-    return;
-  }
-
-  const sumCom = filtered.reduce((s, o) => s + (Number(o.commission) || 0), 0);
-  const summary = '<div class="card-summary">' +
-    '<span class="cs-label">共 ' + filtered.length + ' 笔</span>' +
-    '<span>佣金合计 <span class="cs-value">¥' + sumCom.toLocaleString() + '</span></span>' +
-    '</div>';
-
-  wrap.innerHTML = summary + filtered.map(o => {
-    const ri = orders.indexOf(o);
-    const paid = !!o.paybackDate;
-    const meta = [
-      o.phone,
-      [o.province, o.city].filter(Boolean).join(''),
-      o.package,
-      o.duration
-    ].filter(Boolean).map(esc);
-    return '<div class="order-card' + (paid ? '' : ' unpaid') + '" onclick="showRowDetail(' + ri + ')">' +
-      '<div class="oc-top">' +
-        '<span class="oc-name">' + esc(o.name) + '</span>' +
-        '<span class="oc-commission">¥' + Number(o.commission || 0).toLocaleString() + '</span>' +
-      '</div>' +
-      '<div class="oc-meta">' +
-        '<span class="badge ' + carrierBadge(o.carrier) + '">' + esc(o.carrier) + '</span>' +
-        meta.map(m => '<span>' + m + '</span>').join('<span class="dot">·</span>') +
-      '</div>' +
-      '<div class="oc-bottom">' +
-        '<span class="oc-date">' + esc(o.applyDate || '无日期') +
-          (isAll && o.salesPerson ? ' · ' + esc(o.salesPerson) : '') + '</span>' +
-        '<span class="oc-status ' + (paid ? 'paid' : 'unpaid') + '">' +
-          (paid ? '已回款' : '未回款') + '</span>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
 
 /* ========== 筛选面板 ========== */
 const FILTER_IDS = ['filterCarrier', 'filterProvince', 'filterPayback'];
