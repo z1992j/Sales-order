@@ -6,7 +6,7 @@
 
 https://z1992j.github.io/Sales-order/
 
-访问密码：`888888`
+需要访问密码，向管理员索取。
 
 ## 功能
 
@@ -33,11 +33,12 @@ https://z1992j.github.io/Sales-order/
 2. 点 **Add user** → **Create new user**
 3. 填写：
    - Email：`team@sales-order.local`
-   - Password：`888888`
+   - Password：填页面登录用的那个密码，两边必须一致
    - 勾选 **Auto Confirm User**（不勾的话账号需要邮箱验证，无法登录）
 4. 保存
 
-邮箱地址必须和 `index.html` 里的 `AUTH_EMAIL` 完全一致。
+邮箱地址必须和 `index.html` 里的 `AUTH_EMAIL` 完全一致。密码若与页面登录密码
+不一致，页面会拿不到数据库令牌，顶部横幅会提示 `Invalid login credentials`。
 
 ### 第 2 步：锁死数据库
 
@@ -68,8 +69,8 @@ node tools/hash-password.js 新密码
 2. 到 Supabase → Authentication → Users，把 `team@sales-order.local`
    的密码改成同一个新密码。
 
-Supabase 要求密码至少 6 位。建议换成比 `888888` 长一些的密码：源码里
-只有哈希值没有明文，但 6 位纯数字用程序很快就能猜完。
+Supabase 要求密码至少 6 位。建议用长一些的密码：源码里只有哈希值没有明文，
+但 6 位纯数字用程序很快就能猜完。
 
 ## CSV 导入
 
