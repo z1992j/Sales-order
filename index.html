@@ -211,7 +211,6 @@
   .delta-up{background:#dcfce7;color:#16a34a}
   .delta-down{background:#fee2e2;color:#dc2626}
   .delta-flat{background:#f3f4f6;color:#6b7280}
-  .stat-card.good .value{color:#16a34a}
 
   /* --- Filter panel toggle --- */
   .filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -1010,8 +1009,6 @@ function renderStats() {
   const unpaid = mine.filter(o => !o.paybackDate);
   const unpaidCount = unpaid.length;
   const unpaidAmount = unpaid.reduce((s, o) => s + (Number(o.packageFee)||0), 0);
-  const paidCount = total - unpaidCount;
-  const paybackRate = total > 0 ? Math.round(paidCount / total * 100) : 0;
 
   // Carrier distribution
   const carrierCounts = { '联通': 0, '移动': 0, '电信': 0 };
@@ -1045,12 +1042,6 @@ function renderStats() {
       value: unpaidCount + ' 笔',
       cls: unpaidCount > 0 ? ' warn' : '',
       extra: '<div class="sub">待收 ¥' + unpaidAmount.toLocaleString() + '</div>'
-    },
-    {
-      label: '回款率',
-      value: paybackRate + '%',
-      cls: paybackRate >= 80 ? ' good' : (paybackRate < 50 ? ' warn' : ''),
-      extra: '<div class="sub">已回款 ' + paidCount + ' / ' + total + '</div>'
     },
     { label: '运营商占比', custom: carrierBars },
   ].map(c => {
