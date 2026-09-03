@@ -2,8 +2,16 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>销售订单登记</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1e40af">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="销售订单">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;background:#f0f2f5;color:#1f2937;font-size:14px;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
@@ -85,8 +93,6 @@
   tr.unpaid-row:hover td{background:#fee2e2}
 
   /* --- Warning banner --- */
-  .unpaid-banner{display:none;background:#fef9c3;border:1px solid #fde047;color:#92400e;padding:10px 18px;border-radius:8px;margin:10px auto;max-width:1600px;font-size:13px;font-weight:500}
-  .unpaid-banner.visible{display:block}
 
   /* --- Stat card variants --- */
   .stat-card.warn .value{color:#dc2626}
@@ -193,14 +199,79 @@
   /* --- Monthly trend chart --- */
   .trend-wrap{max-width:1600px;margin:0 auto 12px;padding:0 16px}
   .trend-card{background:#fff;border-radius:10px;padding:14px 18px 10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-  .trend-card h3{font-size:13px;font-weight:600;color:#374151;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
-  .trend-card h3 .hint{font-size:11px;font-weight:400;color:#9ca3af}
+  .trend-card h3{font-size:13px;font-weight:600;color:#374151;margin-bottom:10px;display:flex;
+                 align-items:center;flex-wrap:wrap;gap:8px}
+  .trend-card h3 .hint{font-size:11px;font-weight:400;color:#9ca3af;margin-left:auto}
   .trend-svg{width:100%;height:auto;max-height:170px;display:block}
   .trend-bar{fill:#3b82f6;transition:fill .15s}
   .trend-bar:hover{fill:#1e40af}
   .trend-label{font-size:10px;fill:#9ca3af}
   .trend-value{font-size:10px;fill:#1e40af;font-weight:600}
   .trend-empty{text-align:center;color:#9ca3af;font-size:12px;padding:24px 0}
+  .trend-toggle{display:flex;gap:0;border:1px solid #e5e7eb;border-radius:7px;overflow:hidden}
+  .trend-toggle button{padding:4px 12px;font-size:11px;border:none;background:#fff;color:#6b7280;cursor:pointer;transition:.15s}
+  .trend-toggle button:not(:last-child){border-right:1px solid #e5e7eb}
+  .trend-toggle button.active{background:#1e40af;color:#fff}
+  .trend-bar.current{fill:#1e40af}
+
+  /* --- Stat card detail --- */
+  .stat-card .sub{font-size:11px;color:#6b7280;margin-top:5px}
+  .stat-card .delta{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:600;
+                    padding:1px 6px;border-radius:999px;margin-top:5px}
+  .delta-up{background:#dcfce7;color:#16a34a}
+  .delta-down{background:#fee2e2;color:#dc2626}
+  .delta-flat{background:#f3f4f6;color:#6b7280}
+  .stat-card.good .value{color:#16a34a}
+
+  /* --- Filter panel toggle --- */
+  .filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .btn-filter{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
+              font-size:12px;font-weight:500;cursor:pointer;background:#fff;color:#374151;
+              border:1px solid #e5e7eb;transition:.15s}
+  .btn-filter:hover{border-color:#cbd5e1;background:#f9fafb}
+  .btn-filter.has-active{border-color:#3b82f6;color:#1e40af;background:#eff6ff}
+  .filter-count{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;
+                padding:0 5px;border-radius:999px;background:#1e40af;color:#fff;font-size:10px;font-weight:700}
+  .btn-filter .chev{transition:transform .15s}
+  .btn-filter.open .chev{transform:rotate(180deg)}
+  .toolbar.filters-collapsed .tb-row-filters{display:none}
+  .btn-clear-filters{background:transparent;border:none;color:#6b7280;font-size:12px;cursor:pointer;
+                     padding:6px 8px;border-radius:6px}
+  .btn-clear-filters:hover{color:#dc2626;background:#fef2f2}
+
+  /* --- Sticky table header + footer --- */
+  .table-wrap{max-height:calc(100vh - 200px);min-height:280px;overflow:auto}
+  thead th{position:sticky;top:0;z-index:2;background:#f9fafb;
+           box-shadow:inset 0 -1px 0 #e5e7eb}
+  tfoot td{position:sticky;bottom:0;z-index:2}
+
+  /* --- Offline notice --- */
+  .offline-banner{display:none;background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3;
+                  padding:9px 18px;border-radius:8px;margin:10px auto;max-width:1600px;font-size:12px}
+  .offline-banner.visible{display:block}
+
+  /* --- Mobile card list --- */
+  .card-list{display:none;max-width:1600px;margin:0 auto 32px;padding:0 12px}
+  .order-card{background:#fff;border-radius:12px;padding:13px 15px;margin-bottom:9px;
+              box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;border-left:3px solid transparent}
+  .order-card:active{background:#f8fafc}
+  .order-card.unpaid{border-left-color:#ef4444;background:#fffbfb}
+  .oc-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .oc-name{font-size:15px;font-weight:600;color:#111827}
+  .oc-commission{font-size:16px;font-weight:700;color:#16a34a;white-space:nowrap}
+  .oc-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:7px;font-size:12px;color:#6b7280}
+  .oc-meta .dot{color:#d1d5db}
+  .oc-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:9px;
+             padding-top:8px;border-top:1px solid #f3f4f6;font-size:12px}
+  .oc-date{color:#9ca3af}
+  .oc-status{font-weight:600;padding:2px 9px;border-radius:999px;font-size:11px}
+  .oc-status.paid{background:#dcfce7;color:#16a34a}
+  .oc-status.unpaid{background:#fee2e2;color:#dc2626}
+  .card-summary{background:#f0f9ff;border:1px solid #bfdbfe;border-radius:10px;padding:11px 15px;
+                margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+  .card-summary .cs-label{color:#1e40af;font-weight:600}
+  .card-summary .cs-value{font-weight:700;color:#16a34a}
+  .card-empty{text-align:center;padding:40px 16px;color:#9ca3af;font-size:13px}
 
   /* --- Mobile responsive --- */
   @media(max-width:768px){
@@ -236,8 +307,14 @@
     .trend-wrap{padding:0 12px}
     .trend-card{padding:12px 14px 8px}
     .trend-svg{max-height:none}
+    /* 窄屏一行放不下标题、汇总和切换，把汇总挪到第二行 */
+    .trend-card h3{font-size:13px}
+    .trend-card h3 .hint{order:3;width:100%;margin-left:0}
+    .trend-toggle{margin-left:auto}
+    /* 手机上表格换成卡片列表，不再横向滚动 */
+    .table-wrap{display:none}
+    .card-list{display:block}
     .leaderboard-wrap{padding:0 12px}
-    .unpaid-banner{margin:8px 12px;font-size:12px}
     .modal{width:98%;padding:16px}
   }
 </style>
@@ -276,17 +353,25 @@
 </div>
 
 <div class="setup-banner" id="setupBanner"></div>
+<div class="offline-banner" id="offlineBanner"></div>
 <div class="stats" id="stats"></div>
-<div class="unpaid-banner" id="unpaidBanner"></div>
 <div class="trend-wrap" id="trendWrap"></div>
 <div class="leaderboard-wrap" id="leaderboardWrap" style="display:none"></div>
 
-<div class="toolbar">
-  <!-- Row 1: 搜索 + 主操作 -->
+<div class="toolbar" id="toolbar">
+  <!-- Row 1: 搜索 + 筛选开关 + 主操作 -->
   <div class="tb-row tb-row-main">
     <div class="search-box">
       <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="searchInput" placeholder="搜索姓名、手机、城市、套餐…" oninput="renderTable()">
+    </div>
+    <div class="filter-bar">
+      <button class="btn-filter" id="filterToggle" onclick="toggleFilters()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        筛选<span id="filterCount"></span>
+        <svg class="chev" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <button class="btn-clear-filters" id="clearFilters" onclick="clearAllFilters()" style="display:none">清除</button>
     </div>
     <div class="tb-actions">
       <button class="btn btn-smart" onclick="openSmartModal()">&#9889; 智能录入</button>
@@ -376,6 +461,8 @@
   </table>
   <div class="empty" id="emptyMsg" style="display:none;">暂无订单数据</div>
 </div>
+
+<div class="card-list" id="cardList"></div>
 
 <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
@@ -685,6 +772,7 @@ function enterApp() {
   } else if (banner) {
     banner.classList.remove('visible');
   }
+  initFilterPanel();
   loadData();
 }
 
@@ -723,6 +811,7 @@ async function submitLogin(event) {
 function logout() {
   if (!confirm('确认退出登录？')) return;
   clearStoredSession();
+  clearCachedOrders();   // 退出后不该在本机留下客户资料
   dbSession = null;
   dbAuthReady = false;
   location.reload();
@@ -752,6 +841,33 @@ const CURRENT_SALES_PERSON = (new URLSearchParams(location.search).get('user') |
 let orders = [];
 let editingIdx = -1;
 let saving = false;
+let usingCachedData = false;
+
+// 趋势图看的是佣金还是订单量
+let trendMetric = 'commission';
+try { trendMetric = localStorage.getItem('salesOrderTrendMetric') || 'commission'; } catch (e) {}
+
+// 最近一次成功加载的数据，供离线时只读展示
+const DATA_CACHE_KEY = 'salesOrderData';
+
+function cacheOrders(rows) {
+  try {
+    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({ at: Date.now(), rows }));
+  } catch (e) { /* 超出配额时放弃缓存即可，不影响主流程 */ }
+}
+
+function readCachedOrders() {
+  try {
+    const raw = localStorage.getItem(DATA_CACHE_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    return (d && Array.isArray(d.rows)) ? d : null;
+  } catch (e) { return null; }
+}
+
+function clearCachedOrders() {
+  try { localStorage.removeItem(DATA_CACHE_KEY); } catch (e) {}
+}
 
 // 本地日期格式化：避免 toISOString() 因 UTC 时区导致日期偏移一天
 function ymd(d) {
@@ -814,12 +930,28 @@ async function loadData() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
     orders = rows.map(fromRow);
+    usingCachedData = false;
+    cacheOrders(rows);
   } catch (e) {
+    // 装到主屏后断网也会走到这里：有缓存就以只读方式先顶上，好过一片空白
+    const cached = readCachedOrders();
+    if (cached) {
+      orders = cached.rows.map(fromRow);
+      usingCachedData = true;
+      showOfflineBanner(cached.at, e.message);
+      refreshFilterOptions();
+      initSalesPersonSwitcher();
+      renderStats(); renderTrend(); renderTable();
+      document.getElementById('lastUpdate').textContent =
+        '离线数据 · 缓存于 ' + new Date(cached.at).toLocaleString('zh-CN');
+      return;
+    }
     orders = [];
     document.getElementById('lastUpdate').textContent = '加载失败：' + e.message;
     renderStats(); renderTrend(); renderTable();
     return;
   }
+  hideOfflineBanner();
   refreshFilterOptions();
   initSalesPersonSwitcher();
   renderStats();
@@ -849,15 +981,35 @@ function renderStats() {
   const total = mine.length;
   const totalCommission = mine.reduce((s, o) => s + (Number(o.commission)||0), 0);
 
-  // This month new orders
+  // 本月与上月：用于环比
   const now = new Date();
   const ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
-  const monthNew = mine.filter(o => o.applyDate && o.applyDate.startsWith(ym)).length;
+  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastYm = lastMonthDate.getFullYear() + '-' + String(lastMonthDate.getMonth()+1).padStart(2,'0');
+
+  const thisMonthOrders = mine.filter(o => o.applyDate && o.applyDate.startsWith(ym));
+  const lastMonthOrders = mine.filter(o => o.applyDate && o.applyDate.startsWith(lastYm));
+  const monthNew = thisMonthOrders.length;
+  const monthCommission = thisMonthOrders.reduce((s, o) => s + (Number(o.commission)||0), 0);
+  const lastMonthCommission = lastMonthOrders.reduce((s, o) => s + (Number(o.commission)||0), 0);
+
+  // 环比：上月为 0 时百分比没有意义，只说明是新增
+  let deltaHtml = '';
+  if (lastMonthCommission > 0) {
+    const pct = Math.round((monthCommission - lastMonthCommission) / lastMonthCommission * 100);
+    const cls = pct > 0 ? 'delta-up' : (pct < 0 ? 'delta-down' : 'delta-flat');
+    const arrow = pct > 0 ? '↑' : (pct < 0 ? '↓' : '–');
+    deltaHtml = '<span class="delta ' + cls + '">' + arrow + ' ' + Math.abs(pct) + '% 环比上月</span>';
+  } else if (monthCommission > 0) {
+    deltaHtml = '<span class="delta delta-up">上月无订单</span>';
+  }
 
   // Unpaid count and amount
   const unpaid = mine.filter(o => !o.paybackDate);
   const unpaidCount = unpaid.length;
   const unpaidAmount = unpaid.reduce((s, o) => s + (Number(o.packageFee)||0), 0);
+  const paidCount = total - unpaidCount;
+  const paybackRate = total > 0 ? Math.round(paidCount / total * 100) : 0;
 
   // Carrier distribution
   const carrierCounts = { '联通': 0, '移动': 0, '电信': 0 };
@@ -876,27 +1028,35 @@ function renderStats() {
   }).join('');
 
   document.getElementById('stats').innerHTML = [
-    { label: '订单总数', value: total + ' 笔', cls: '' },
-    { label: '佣金合计', value: '\u00a5' + totalCommission.toLocaleString(), cls: '' },
-    { label: '本月新增', value: monthNew + ' 笔', cls: '' },
-    { label: '未回款', value: unpaidCount + ' 笔', cls: unpaidCount > 0 ? ' warn' : '' },
-    { label: '运营商占比', value: '', cls: '', custom: carrierBars },
+    {
+      label: '本月佣金',
+      value: '¥' + monthCommission.toLocaleString(),
+      extra: deltaHtml || '<div class="sub">本月新增 ' + monthNew + ' 笔</div>'
+    },
+    {
+      label: '佣金合计',
+      value: '¥' + totalCommission.toLocaleString(),
+      extra: '<div class="sub">共 ' + total + ' 笔订单</div>'
+    },
+    {
+      label: '未回款',
+      value: unpaidCount + ' 笔',
+      cls: unpaidCount > 0 ? ' warn' : '',
+      extra: '<div class="sub">待收 ¥' + unpaidAmount.toLocaleString() + '</div>'
+    },
+    {
+      label: '回款率',
+      value: paybackRate + '%',
+      cls: paybackRate >= 80 ? ' good' : (paybackRate < 50 ? ' warn' : ''),
+      extra: '<div class="sub">已回款 ' + paidCount + ' / ' + total + '</div>'
+    },
+    { label: '运营商占比', custom: carrierBars },
   ].map(c => {
-    const valHtml = c.custom ? c.custom : '<div class="value">' + c.value + '</div>';
-    return '<div class="stat-card' + c.cls + '"><div class="label">' + c.label + '</div>' + valHtml + '</div>';
+    const body = c.custom
+      ? c.custom
+      : '<div class="value">' + c.value + '</div>' + (c.extra || '');
+    return '<div class="stat-card' + (c.cls || '') + '"><div class="label">' + c.label + '</div>' + body + '</div>';
   }).join('');
-
-  // Warning banner
-  const banner = document.getElementById('unpaidBanner');
-  if (banner) {
-    if (unpaidCount > 0) {
-      const who = isAll ? '团队' : '您';
-      banner.textContent = '\u26a0\ufe0f ' + who + '有 ' + unpaidCount + ' 笔订单未回款，合计金额 \u00a5' + unpaidAmount.toLocaleString();
-      banner.classList.add('visible');
-    } else {
-      banner.classList.remove('visible');
-    }
-  }
 
   // Leaderboard for ALL mode
   const lbWrap = document.getElementById('leaderboardWrap');
@@ -1049,6 +1209,9 @@ function renderTable() {
     '</tr>';
   }).join('');
 
+  renderCards(filtered);
+  refreshFilterIndicator();
+
   const sumInstall = filtered.reduce((s,o)=>s+(Number(o.installFee)||0),0);
   const sumPkg = filtered.reduce((s,o)=>s+(Number(o.packageFee)||0),0);
   const sumCom = filtered.reduce((s,o)=>s+(Number(o.commission)||0),0);
@@ -1063,6 +1226,120 @@ function renderTable() {
     '<td class="text-right col-commission">\u00a5' + sumCom.toLocaleString() + '</td>' +
     '<td colspan="' + tailCols + '"></td>' +
   '</tr>';
+}
+
+/* ========== 离线提示 ========== */
+function showOfflineBanner(at, reason) {
+  const el = document.getElementById('offlineBanner');
+  if (!el) return;
+  el.innerHTML = '📴 <b>离线模式</b> —— 显示的是 ' + new Date(at).toLocaleString('zh-CN') +
+    ' 缓存的数据，可能已不是最新。此状态下新增、修改、删除都会失败。' +
+    '<br><span style="color:#6366f1">原因：' + esc(reason || '网络不可用') + '</span>';
+  el.classList.add('visible');
+}
+
+function hideOfflineBanner() {
+  const el = document.getElementById('offlineBanner');
+  if (el) el.classList.remove('visible');
+}
+
+// 网络恢复后自动重新拉取
+window.addEventListener('online', () => { if (usingCachedData) loadData(); });
+
+/* ========== 手机端卡片列表 ==========
+   手机上表格要么横向滚动、要么砍掉一半列，两种都难用。
+   改成一屏能读完的卡片，点开仍走原来的详情弹窗。 */
+function renderCards(filtered) {
+  const wrap = document.getElementById('cardList');
+  if (!wrap) return;
+  const isAll = CURRENT_SALES_PERSON === 'ALL';
+
+  if (!filtered.length) {
+    wrap.innerHTML = '<div class="card-empty">没有符合条件的订单</div>';
+    return;
+  }
+
+  const sumCom = filtered.reduce((s, o) => s + (Number(o.commission) || 0), 0);
+  const summary = '<div class="card-summary">' +
+    '<span class="cs-label">共 ' + filtered.length + ' 笔</span>' +
+    '<span>佣金合计 <span class="cs-value">¥' + sumCom.toLocaleString() + '</span></span>' +
+    '</div>';
+
+  wrap.innerHTML = summary + filtered.map(o => {
+    const ri = orders.indexOf(o);
+    const paid = !!o.paybackDate;
+    const meta = [
+      o.phone,
+      [o.province, o.city].filter(Boolean).join(''),
+      o.package,
+      o.duration
+    ].filter(Boolean).map(esc);
+    return '<div class="order-card' + (paid ? '' : ' unpaid') + '" onclick="showRowDetail(' + ri + ')">' +
+      '<div class="oc-top">' +
+        '<span class="oc-name">' + esc(o.name) + '</span>' +
+        '<span class="oc-commission">¥' + Number(o.commission || 0).toLocaleString() + '</span>' +
+      '</div>' +
+      '<div class="oc-meta">' +
+        '<span class="badge ' + carrierBadge(o.carrier) + '">' + esc(o.carrier) + '</span>' +
+        meta.map(m => '<span>' + m + '</span>').join('<span class="dot">·</span>') +
+      '</div>' +
+      '<div class="oc-bottom">' +
+        '<span class="oc-date">' + esc(o.applyDate || '无日期') +
+          (isAll && o.salesPerson ? ' · ' + esc(o.salesPerson) : '') + '</span>' +
+        '<span class="oc-status ' + (paid ? 'paid' : 'unpaid') + '">' +
+          (paid ? '已回款' : '未回款') + '</span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+/* ========== 筛选面板 ========== */
+const FILTER_IDS = ['filterCarrier', 'filterProvince', 'filterPayback'];
+
+function activeFilterCount() {
+  let n = FILTER_IDS.filter(id => (document.getElementById(id) || {}).value).length;
+  const from = (document.getElementById('dateFrom') || {}).value;
+  const to = (document.getElementById('dateTo') || {}).value;
+  if (from || to) n++;
+  return n;
+}
+
+function refreshFilterIndicator() {
+  const n = activeFilterCount();
+  const btn = document.getElementById('filterToggle');
+  const badge = document.getElementById('filterCount');
+  const clear = document.getElementById('clearFilters');
+  if (badge) badge.innerHTML = n ? ' <span class="filter-count">' + n + '</span>' : '';
+  if (btn) btn.classList.toggle('has-active', n > 0);
+  if (clear) clear.style.display = n > 0 ? '' : 'none';
+}
+
+function toggleFilters() {
+  const tb = document.getElementById('toolbar');
+  const collapsed = tb.classList.toggle('filters-collapsed');
+  document.getElementById('filterToggle').classList.toggle('open', !collapsed);
+  try { localStorage.setItem('salesOrderFiltersCollapsed', collapsed ? '1' : '0'); } catch (e) {}
+}
+
+function initFilterPanel() {
+  const tb = document.getElementById('toolbar');
+  let collapsed;
+  try { collapsed = localStorage.getItem('salesOrderFiltersCollapsed'); } catch (e) { collapsed = null; }
+  // 没存过偏好时，窄屏默认收起，宽屏默认展开
+  if (collapsed === null) collapsed = window.innerWidth <= 768 ? '1' : '0';
+  tb.classList.toggle('filters-collapsed', collapsed === '1');
+  document.getElementById('filterToggle').classList.toggle('open', collapsed !== '1');
+  refreshFilterIndicator();
+}
+
+function clearAllFilters() {
+  FILTER_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const from = document.getElementById('dateFrom'), to = document.getElementById('dateTo');
+  if (from) from.value = '';
+  if (to) to.value = '';
+  document.querySelectorAll('.time-filter .pill').forEach(p =>
+    p.classList.toggle('active', p.dataset.range === 'all'));
+  renderTable();
 }
 
 function openModal(idx) {
@@ -1453,9 +1730,18 @@ function renderTrend() {
     if (b) { b.commission += Number(o.commission) || 0; b.count++; }
   });
 
-  const max = Math.max(...buckets.map(b => b.commission));
+  const isCount = trendMetric === 'count';
+  const valueOf = b => isCount ? b.count : b.commission;
+  const currentKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const title = isCount ? '近 12 个月订单量趋势' : '近 12 个月佣金趋势';
+  const toggle = '<span class="trend-toggle">' +
+    '<button class="' + (isCount ? '' : 'active') + '" onclick="setTrendMetric(\'commission\')">佣金</button>' +
+    '<button class="' + (isCount ? 'active' : '') + '" onclick="setTrendMetric(\'count\')">订单数</button>' +
+    '</span>';
+
+  const max = Math.max(...buckets.map(valueOf));
   if (max <= 0) {
-    wrap.innerHTML = '<div class="trend-card"><h3>近 12 个月佣金趋势</h3>' +
+    wrap.innerHTML = '<div class="trend-card"><h3>' + title + toggle + '</h3>' +
       '<div class="trend-empty">最近 12 个月暂无订单数据</div></div>';
     return;
   }
@@ -1471,30 +1757,41 @@ function renderTrend() {
   const slot = W / buckets.length;
   const barW = slot * 0.56;
   const bars = buckets.map((b, i) => {
-    const h = b.commission > 0 ? Math.max(2, (b.commission / max) * (H - padTop - padBottom)) : 0;
+    const v = valueOf(b);
+    const h = v > 0 ? Math.max(2, (v / max) * (H - padTop - padBottom)) : 0;
     const x = i * slot + (slot - barW) / 2;
     const y = H - padBottom - h;
-    // 窄屏放不下金额标注，只留月份
-    const valueLabel = (b.commission > 0 && !narrow)
+    const isCurrent = b.key === currentKey;
+    // 窄屏放不下数值标注，只留月份
+    const shown = isCount ? v : (v >= 10000 ? (v / 10000).toFixed(1) + '万' : v);
+    const valueLabel = (v > 0 && !narrow)
       ? '<text class="trend-value" x="' + (x + barW / 2) + '" y="' + (y - 4) + '" text-anchor="middle">' +
-        (b.commission >= 10000 ? (b.commission / 10000).toFixed(1) + '万' : b.commission) + '</text>'
+        shown + '</text>'
       : '';
     return '<g>' +
-      '<rect class="trend-bar" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) +
-        '" height="' + h.toFixed(1) + '" rx="3"><title>' + b.key + '：' + b.count + ' 笔 / ¥' +
-        b.commission.toLocaleString() + '</title></rect>' +
+      '<rect class="trend-bar' + (isCurrent ? ' current' : '') + '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) +
+        '" width="' + barW.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="3">' +
+        '<title>' + b.key + '：' + b.count + ' 笔 / ¥' + b.commission.toLocaleString() + '</title></rect>' +
       valueLabel +
       '<text class="trend-label" x="' + (x + barW / 2) + '" y="' + (H - padBottom + labelSize + 4) +
         '" style="font-size:' + labelSize + 'px" text-anchor="middle">' + b.label + '</text>' +
       '</g>';
   }).join('');
 
-  const sum = buckets.reduce((s, b) => s + b.commission, 0);
+  const sum = buckets.reduce((s, b) => s + valueOf(b), 0);
+  const fmtVal = n => isCount ? (n + ' 笔') : ('¥' + n.toLocaleString());
   wrap.innerHTML = '<div class="trend-card">' +
-    '<h3>近 12 个月佣金趋势<span class="hint">合计 ¥' + sum.toLocaleString() + ' · 峰值 ¥' + max.toLocaleString() + '</span></h3>' +
-    '<svg class="trend-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="近 12 个月佣金趋势">' +
+    '<h3>' + title +
+      '<span class="hint">合计 ' + fmtVal(sum) + ' · 峰值 ' + fmtVal(max) + '</span>' + toggle + '</h3>' +
+    '<svg class="trend-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + title + '">' +
     '<line x1="0" y1="' + (H - padBottom) + '" x2="' + W + '" y2="' + (H - padBottom) + '" stroke="#e5e7eb" stroke-width="1"/>' +
     bars + '</svg></div>';
+}
+
+function setTrendMetric(metric) {
+  trendMetric = metric;
+  try { localStorage.setItem('salesOrderTrendMetric', metric); } catch (e) {}
+  renderTrend();
 }
 
 // 横竖屏或窗口尺寸切换时重画，让窄屏/宽屏两套排版都能生效
@@ -1840,6 +2137,14 @@ function renderLogRow(row) {
 
 /* ========== 启动 ========== */
 bootstrap();
+
+// 注册 Service Worker，让页面能添加到主屏并离线打开。
+// 失败不影响正常使用（例如通过 file:// 打开时没有 SW 环境）。
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
