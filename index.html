@@ -178,6 +178,16 @@
   .login-err{color:#dc2626;font-size:12px;margin-top:10px;min-height:16px}
   .login-remember{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:#6b7280}
   .login-remember input{width:auto;margin:0}
+  .btn-view{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);
+            padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;outline:none}
+  .btn-view:hover{background:rgba(255,255,255,.28)}
+  .btn-view.active{background:#fbbf24;color:#78350f;border-color:#fbbf24}
+  .other-view-banner{display:none;background:#fffbeb;border:1px solid #fcd34d;color:#92400e;
+                     padding:10px 18px;border-radius:8px;margin:10px auto;max-width:1600px;
+                     font-size:12px;line-height:1.6}
+  .other-view-banner.visible{display:block}
+  .btn-claim{background:#dbeafe;color:#1e40af;font-weight:600}
+  .btn-claim:hover{background:#bfdbfe}
   .btn-logout{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;outline:none}
   .btn-logout:hover{background:rgba(255,255,255,.28)}
 
@@ -339,6 +349,7 @@
   <div class="container">
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <h1>销售订单登记</h1>
+      <button class="btn-view" id="viewToggle" onclick="toggleView()" style="display:none"></button>
       <button class="btn-logout" onclick="logout()" title="退出登录">退出</button>
     </div>
     <p id="lastUpdate">数据加载中…</p>
@@ -346,6 +357,7 @@
 </div>
 
 <div class="setup-banner" id="setupBanner"></div>
+<div class="other-view-banner" id="otherViewBanner">你正在查看<b>非本人名下</b>的历史记录。这里的编辑、删除、改归属都会直接写入数据库；新增订单仍会记在自己名下。清理完点页头的「返回我的订单」。</div>
 <div class="offline-banner" id="offlineBanner"></div>
 <div class="stats" id="stats"></div>
 <div class="trend-wrap" id="trendWrap"></div>
@@ -841,16 +853,50 @@ const DATA_CACHE_KEY = 'salesOrderData';
 
 // 只显示本人名下的订单。数据库里可能还留着他人（或早期导入时归属为空）的
 // 历史记录，它们不进入界面，但会在顶部标出条数，避免悄无声息地消失。
-let hiddenCount = 0;
+let hiddenCount = 0;     // 当前视图之外还有多少条
+let allOrders = [];      // 数据库返回的全部记录
+// 'mine' = 只看本人名下；'others' = 只看非本人名下，用于清理历史遗留数据。
+// 不做持久化：每次打开一律回到「我的订单」，避免莫名其妙停在另一个视图里。
+let viewMode = 'mine';
 
-function toMine(rows) {
-  const all = rows.map(fromRow);
-  const mine = all.filter(o => o.salesPerson === SALES_PERSON);
-  hiddenCount = all.length - mine.length;
-  return mine;
+function isMine(o) { return o.salesPerson === SALES_PERSON; }
+
+// 收到数据后重新切分两个视图；换视图时也走这里，无需重新请求。
+function applyView() {
+  const mine = allOrders.filter(isMine);
+  const others = allOrders.filter(o => !isMine(o));
+  orders = viewMode === 'others' ? others : mine;
+  hiddenCount = viewMode === 'others' ? mine.length : others.length;
+  refreshViewToggle(others.length);
+}
+
+function refreshViewToggle(otherCount) {
+  const btn = document.getElementById('viewToggle');
+  const banner = document.getElementById('otherViewBanner');
+  if (!btn) return;
+  // 没有遗留数据时不必露出这个入口
+  btn.style.display = (otherCount > 0 || viewMode === 'others') ? '' : 'none';
+  btn.textContent = viewMode === 'others'
+    ? '← 返回我的订单'
+    : '查看其他归属 (' + otherCount + ')';
+  btn.classList.toggle('active', viewMode === 'others');
+  if (banner) banner.classList.toggle('visible', viewMode === 'others');
+}
+
+function toggleView() {
+  viewMode = viewMode === 'others' ? 'mine' : 'others';
+  applyView();
+  refreshFilterOptions();
+  renderStats(); renderTrend(); renderTable();
+  document.getElementById('lastUpdate').textContent =
+    statusLine('最后更新：' + new Date().toLocaleString('zh-CN'));
 }
 
 function statusLine(suffix) {
+  if (viewMode === 'others') {
+    return '⚠️ 正在查看非本人名下的 ' + orders.length + ' 条记录（你自己的 ' +
+      hiddenCount + ' 条已暂时隐藏）· ' + suffix;
+  }
   return '共 ' + orders.length + ' 条记录' +
     (hiddenCount ? '（另有 ' + hiddenCount + ' 条非本人名下，未显示）' : '') +
     ' · ' + suffix;
@@ -935,14 +981,16 @@ async function loadData() {
     }
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
-    orders = toMine(rows);
+    allOrders = rows.map(fromRow);
+    applyView();
     usingCachedData = false;
     cacheOrders(rows);
   } catch (e) {
     // 装到主屏后断网也会走到这里：有缓存就以只读方式先顶上，好过一片空白
     const cached = readCachedOrders();
     if (cached) {
-      orders = toMine(cached.rows);
+      allOrders = cached.rows.map(fromRow);
+      applyView();
       usingCachedData = true;
       showOfflineBanner(cached.at, e.message);
       refreshFilterOptions();
@@ -1591,14 +1639,18 @@ function showRowDetail(idx) {
     ['身份证号', o.idCard || '-'],
     ['地址', o.address || '-'],
   ];
+  // 只有非本人订单才显示归属，本人视图下这一行是废话
+  if (!isMine(o)) fields.push(['当前归属', o.salesPerson || '(空)']);
   const paidBtn = o.paybackDate ? '' :
     '<button class="btn btn-sm btn-paid" onclick="markPaid(' + idx + ')">✔ 标记回款</button>';
+  const claimBtn = isMine(o) ? '' :
+    '<button class="btn btn-sm btn-claim" onclick="claimOrder(' + idx + ')">归到我名下</button>';
   card.innerHTML = '<h3>订单详情 <button class="close-btn" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\')">&times;</button></h3>' +
     fields.map(function(f) {
       return '<div class="detail-row"><span class="dl">' + f[0] + '</span><span class="dv">' + esc(f[1]) + '</span></div>';
     }).join('') +
     '<div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">' +
-    paidBtn +
+    claimBtn + paidBtn +
     '<button class="btn btn-sm btn-cancel" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\');editOrder(' + idx + ')">编辑</button>' +
     '<button class="btn btn-sm btn-danger" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\');deleteOrder(' + idx + ')">删除</button>' +
     '</div>';
@@ -1697,6 +1749,28 @@ window.addEventListener('resize', () => {
   clearTimeout(layoutResizeTimer);
   layoutResizeTimer = setTimeout(() => { renderTrend(); renderTable(); }, 200);
 });
+
+/* ========== 把历史订单改到自己名下 ========== */
+async function claimOrder(idx) {
+  const o = orders[idx];
+  if (!o || isMine(o)) return;
+  if (!confirm('把「' + (o.name || '该订单') + ' · ' + (o.phone || '') + '」的归属从「' +
+      (o.salesPerson || '(空)') + '」改为「' + SALES_PERSON + '」？\n\n' +
+      '改完它会出现在你的订单列表和统计里。')) return;
+  await ensureFreshSession();
+  try {
+    const res = await fetch(REST + '?id=eq.' + encodeURIComponent(o.id), {
+      method: 'PATCH',
+      headers: HEADERS(),
+      body: JSON.stringify({ sales_person: SALES_PERSON })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
+    document.getElementById('detailOverlay').classList.remove('active');
+    await loadData();
+  } catch (e) {
+    alert('改归属失败：' + e.message);
+  }
+}
 
 /* ========== 一键标记回款 ========== */
 async function markPaid(idx) {
