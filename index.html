@@ -1067,7 +1067,6 @@ function renderStats() {
   // Unpaid count and amount
   const unpaid = mine.filter(o => !o.paybackDate);
   const unpaidCount = unpaid.length;
-  const unpaidAmount = unpaid.reduce((s, o) => s + (Number(o.packageFee)||0), 0);
   const agings = unpaid.map(agingDays).filter(d => d !== null);
   const oldestAging = agings.length ? Math.max(...agings) : null;
 
@@ -1102,8 +1101,9 @@ function renderStats() {
       label: '未回款',
       value: unpaidCount + ' 笔',
       cls: unpaidCount > 0 ? ' warn' : '',
-      extra: '<div class="sub">待收 ¥' + unpaidAmount.toLocaleString() +
-             (oldestAging !== null ? ' · 最久 ' + oldestAging + ' 天' : '') + '</div>'
+      extra: oldestAging !== null
+        ? '<div class="sub">最久 ' + oldestAging + ' 天</div>'
+        : ''
     },
     { label: '运营商占比', custom: carrierBars },
   ].map(c => {
