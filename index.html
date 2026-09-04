@@ -65,7 +65,7 @@
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
   .col-name{font-weight:600;color:#111827}
   .col-commission{color:#16a34a;font-weight:600}
-  /* 未回款账龄：30 天内、30–59 天、60 天以上 */
+  /* 未结佣账龄：30 天内、30–59 天、60 天以上 */
   .age-ok{color:#6b7280}
   .age-warn{color:#b45309;font-weight:600}
   .age-bad{color:#dc2626;font-weight:700}
@@ -310,7 +310,7 @@
     /* 必须限定在 thead / tbody：合计行的单元格序号含义不同，
        套用同一组 nth-child 会误伤它，并让列宽模型与表体对不上。 */
     .table-wrap thead th:nth-child(2),.table-wrap tbody td:nth-child(2),   /* 办理日期 */
-    .table-wrap thead th:nth-child(3),.table-wrap tbody td:nth-child(3),   /* 回款日期 */
+    .table-wrap thead th:nth-child(3),.table-wrap tbody td:nth-child(3),   /* 结佣日期 */
     .table-wrap thead th:nth-child(6),.table-wrap tbody td:nth-child(6),   /* 省份 */
     .table-wrap thead th:nth-child(10),.table-wrap tbody td:nth-child(10), /* 时限 */
     .table-wrap thead th:nth-child(11),.table-wrap tbody td:nth-child(11), /* 安装费 */
@@ -403,17 +403,17 @@
       <option value="">全部省份</option>
     </select>
     <select class="ctrl" id="filterPayback" onchange="renderTable()">
-      <option value="">回款状态：全部</option>
-      <option value="paid">已回款</option>
-      <option value="unpaid">未回款</option>
-      <option value="over30">未回款 · 逾 30 天</option>
-      <option value="over60">未回款 · 逾 60 天</option>
+      <option value="">结佣状态：全部</option>
+      <option value="paid">已结佣</option>
+      <option value="unpaid">未结佣</option>
+      <option value="over30">未结佣 · 逾 30 天</option>
+      <option value="over60">未结佣 · 逾 60 天</option>
     </select>
     <select class="ctrl" id="sortBy" onchange="renderTable()">
       <option value="apply_desc">办理日期 ↓</option>
       <option value="apply_asc">办理日期 ↑</option>
-      <option value="payback_desc">回款日期 ↓</option>
-      <option value="payback_asc">回款日期 ↑</option>
+      <option value="payback_desc">结佣日期 ↓</option>
+      <option value="payback_asc">结佣日期 ↑</option>
       <option value="commission_desc">佣金 ↓</option>
       <option value="commission_asc">佣金 ↑</option>
       <option value="packageFee_desc">套餐费 ↓</option>
@@ -453,7 +453,7 @@
       <tr>
         <th>序号</th>
         <th>办理日期</th>
-        <th>回款日期</th>
+        <th>结佣日期</th>
         <th>姓名</th>
         <th>手机号</th>
         <th>省份</th>
@@ -485,7 +485,7 @@
         <input type="date" id="f_applyDate">
       </div>
       <div class="form-group">
-        <label>回款日期</label>
+        <label>结佣日期</label>
         <input type="date" id="f_paybackDate">
       </div>
       <div class="form-group">
@@ -1098,7 +1098,7 @@ function renderStats() {
       extra: '<div class="sub">共 ' + total + ' 笔订单</div>'
     },
     {
-      label: '未回款',
+      label: '未结佣',
       value: unpaidCount + ' 笔',
       cls: unpaidCount > 0 ? ' warn' : '',
       extra: oldestAging !== null
@@ -1125,7 +1125,7 @@ function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.
 // 放进属性值时还要挡住引号
 function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
 
-/* ========== 未回款账龄 ==========
+/* ========== 未结佣账龄 ==========
    'YYYY-MM-DD' 交给 Date 解析会按 UTC 处理，东八区会差一天，这里按本地日期解。*/
 function parseYmd(str) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str || '');
@@ -1204,12 +1204,12 @@ function getFilteredOrders() {
   return filtered;
 }
 
-// 已回款显示日期；未回款显示已拖欠天数，比一个「-」有用得多
+// 已结佣显示日期；未结佣显示已拖欠天数，比一个「-」有用得多
 function paybackCell(o) {
   if (o.paybackDate) return esc(o.paybackDate);
   const days = agingDays(o);
-  if (days === null) return '<span class="age-ok">未回款</span>';
-  return '<span class="' + agingLevel(days) + '">未回款 ' + days + '天</span>';
+  if (days === null) return '<span class="age-ok">未结佣</span>';
+  return '<span class="' + agingLevel(days) + '">未结佣 ' + days + '天</span>';
 }
 
 function renderTable() {
@@ -1383,7 +1383,7 @@ async function saveOrder() {
     alert('佣金率应在 0–100 之间'); f_commissionRate.focus(); return;
   }
   if (f_paybackDate.value && f_applyDate.value && f_paybackDate.value < f_applyDate.value) {
-    alert('回款日期不能早于办理日期'); f_paybackDate.focus(); return;
+    alert('结佣日期不能早于办理日期'); f_paybackDate.focus(); return;
   }
 
   // 新增时提醒重复手机号
@@ -1457,7 +1457,7 @@ async function deleteOrder(i){
 function exportCSV(){
   const list = getFilteredOrders();
   // 表头与导入端的别名表一致，导出的文件可以直接改完再导回来
-  const h='序号,办理日期,回款日期,姓名,手机号,省份,城市,运营商,套餐,时限,安装费,套餐费,佣金,佣金率,身份证号,地址\n';
+  const h='序号,办理日期,结佣日期,姓名,手机号,省份,城市,运营商,套餐,时限,安装费,套餐费,佣金,佣金率,身份证号,地址\n';
   const cell=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
   const rows=list.map((o,i)=>[i+1,o.applyDate,o.paybackDate,o.name,o.phone,o.province,o.city,o.carrier,o.package,o.duration,o.installFee,o.packageFee,o.commission,Math.round((Number(o.commissionRate)||0)*100)+'%',o.idCard,o.address].map(cell).join(',')).join('\n');
   const blob=new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'});
@@ -1677,8 +1677,8 @@ function showRowDetail(idx) {
   const card = document.getElementById('detailCard');
   const fields = [
     ['办理日期', o.applyDate || '-'],
-    ['回款日期', o.paybackDate ||
-      (agingDays(o) !== null ? '未回款（已 ' + agingDays(o) + ' 天）' : '未回款')],
+    ['结佣日期', o.paybackDate ||
+      (agingDays(o) !== null ? '未结佣（已 ' + agingDays(o) + ' 天）' : '未结佣')],
     ['姓名', o.name],
     ['手机号', o.phone],
     ['省份', o.province],
@@ -1696,7 +1696,7 @@ function showRowDetail(idx) {
   // 只有非本人订单才显示归属，本人视图下这一行是废话
   if (!isMine(o)) fields.push(['当前归属', o.salesPerson || '(空)']);
   const paidBtn = o.paybackDate ? '' :
-    '<button class="btn btn-sm btn-paid" onclick="markPaid(' + idx + ')">✔ 标记回款</button>';
+    '<button class="btn btn-sm btn-paid" onclick="markPaid(' + idx + ')">✔ 标记结佣</button>';
   const claimBtn = isMine(o) ? '' :
     '<button class="btn btn-sm btn-claim" onclick="claimOrder(' + idx + ')">归到我名下</button>';
   card.innerHTML = '<h3>订单详情 <button class="close-btn" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\')">&times;</button></h3>' +
@@ -1826,11 +1826,11 @@ async function claimOrder(idx) {
   }
 }
 
-/* ========== 一键标记回款 ========== */
+/* ========== 一键标记结佣 ========== */
 async function markPaid(idx) {
   const o = orders[idx];
   if (!o || o.paybackDate) return;
-  if (!confirm('确认将「' + (o.name || '该订单') + '」标记为今日（' + todayStr() + '）回款？')) return;
+  if (!confirm('确认将「' + (o.name || '该订单') + '」标记为今日（' + todayStr() + '）结佣？')) return;
   await ensureFreshSession();
   try {
     const res = await fetch(REST + '?id=eq.' + encodeURIComponent(o.id), {
@@ -1900,7 +1900,8 @@ let pendingImport = { rows: [], skipped: 0, invalid: 0 };
 // 表头别名 → 内部字段
 const CSV_HEADER_ALIASES = {
   '办理日期': 'applyDate', '下单日期': 'applyDate', '日期': 'applyDate',
-  '回款日期': 'paybackDate', '回款': 'paybackDate',
+  '结佣日期': 'paybackDate', '结佣': 'paybackDate',
+  '回款日期': 'paybackDate', '回款': 'paybackDate',   // 旧表头，保留兼容
   '姓名': 'name', '客户': 'name', '客户姓名': 'name',
   '手机号': 'phone', '手机': 'phone', '电话': 'phone', '联系方式': 'phone',
   '省份': 'province', '省': 'province',
@@ -2117,7 +2118,7 @@ function closeLogViewer() {
 }
 
 const FIELD_ZH = {
-  apply_date: '办理日期', payback_date: '回款日期', name: '姓名', phone: '手机号',
+  apply_date: '办理日期', payback_date: '结佣日期', name: '姓名', phone: '手机号',
   province: '省份', city: '城市', carrier: '运营商', package: '套餐', duration: '时限',
   install_fee: '安装费', package_fee: '套餐费', commission: '佣金',
   commission_rate: '佣金率', id_card: '身份证号', address: '地址', sales_person: '销售员'
