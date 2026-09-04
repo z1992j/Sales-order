@@ -65,6 +65,10 @@
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
   .col-name{font-weight:600;color:#111827}
   .col-commission{color:#16a34a;font-weight:600}
+  /* 未回款账龄：30 天内、30–59 天、60 天以上 */
+  .age-ok{color:#6b7280}
+  .age-warn{color:#b45309;font-weight:600}
+  .age-bad{color:#dc2626;font-weight:700}
   /* 地址是全表最宽的一列。截断成一行，悬停看全文，详情弹窗里也有完整地址。
      表格是 auto 布局，max-width 得加在内层元素上才生效。 */
   .col-address span{display:block;max-width:150px;overflow:hidden;
@@ -402,6 +406,8 @@
       <option value="">回款状态：全部</option>
       <option value="paid">已回款</option>
       <option value="unpaid">未回款</option>
+      <option value="over30">未回款 · 逾 30 天</option>
+      <option value="over60">未回款 · 逾 60 天</option>
     </select>
     <select class="ctrl" id="sortBy" onchange="renderTable()">
       <option value="apply_desc">办理日期 ↓</option>
@@ -1062,6 +1068,8 @@ function renderStats() {
   const unpaid = mine.filter(o => !o.paybackDate);
   const unpaidCount = unpaid.length;
   const unpaidAmount = unpaid.reduce((s, o) => s + (Number(o.packageFee)||0), 0);
+  const agings = unpaid.map(agingDays).filter(d => d !== null);
+  const oldestAging = agings.length ? Math.max(...agings) : null;
 
   // Carrier distribution
   const carrierCounts = { '联通': 0, '移动': 0, '电信': 0 };
@@ -1094,7 +1102,8 @@ function renderStats() {
       label: '未回款',
       value: unpaidCount + ' 笔',
       cls: unpaidCount > 0 ? ' warn' : '',
-      extra: '<div class="sub">待收 ¥' + unpaidAmount.toLocaleString() + '</div>'
+      extra: '<div class="sub">待收 ¥' + unpaidAmount.toLocaleString() +
+             (oldestAging !== null ? ' · 最久 ' + oldestAging + ' 天' : '') + '</div>'
     },
     { label: '运营商占比', custom: carrierBars },
   ].map(c => {
@@ -1115,6 +1124,32 @@ function carrierBadge(c) {
 function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 // 放进属性值时还要挡住引号
 function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
+
+/* ========== 未回款账龄 ==========
+   'YYYY-MM-DD' 交给 Date 解析会按 UTC 处理，东八区会差一天，这里按本地日期解。*/
+function parseYmd(str) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str || '');
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+}
+
+// 从办理日期到今天的天数；日期缺失或在未来时返回 null
+function agingDays(o) {
+  if (o.paybackDate) return null;
+  const d = parseYmd(o.applyDate);
+  if (!d) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((today - d) / 86400000);
+  return days >= 0 ? days : null;
+}
+
+// 30 / 60 天两道线，与催款节奏对应
+function agingLevel(days) {
+  if (days === null) return '';
+  if (days >= 60) return 'age-bad';
+  if (days >= 30) return 'age-warn';
+  return 'age-ok';
+}
 
 // 与 CSS 里的手机端断点保持一致
 function isNarrow() { return window.matchMedia('(max-width:768px)').matches; }
@@ -1146,6 +1181,8 @@ function getFilteredOrders() {
     if (provinceFilter && o.province !== provinceFilter) return false;
     if (paybackFilter === 'paid' && !o.paybackDate) return false;
     if (paybackFilter === 'unpaid' && o.paybackDate) return false;
+    if (paybackFilter === 'over30' && !(agingDays(o) >= 30)) return false;
+    if (paybackFilter === 'over60' && !(agingDays(o) >= 60)) return false;
     if (dateFrom && (!o.applyDate || o.applyDate < dateFrom)) return false;
     if (dateTo && (!o.applyDate || o.applyDate > dateTo)) return false;
     return true;
@@ -1167,6 +1204,14 @@ function getFilteredOrders() {
   return filtered;
 }
 
+// 已回款显示日期；未回款显示已拖欠天数，比一个「-」有用得多
+function paybackCell(o) {
+  if (o.paybackDate) return esc(o.paybackDate);
+  const days = agingDays(o);
+  if (days === null) return '<span class="age-ok">未回款</span>';
+  return '<span class="' + agingLevel(days) + '">未回款 ' + days + '天</span>';
+}
+
 function renderTable() {
   const filtered = getFilteredOrders();
   const tbody = document.getElementById('tableBody');
@@ -1178,7 +1223,7 @@ function renderTable() {
     return '<tr class="' + unpaidCls.trim() + '" data-idx="' + ri + '" onclick="showRowDetail(' + ri + ')">' +
       '<td class="nowrap">' + (i+1) + '</td>' +
       '<td class="nowrap">' + esc(o.applyDate) + '</td>' +
-      '<td class="nowrap">' + esc(o.paybackDate||'-') + '</td>' +
+      '<td class="nowrap">' + paybackCell(o) + '</td>' +
       '<td class="col-name nowrap">' + esc(o.name) + '</td>' +
       '<td class="nowrap">' + esc(o.phone) + '</td>' +
       '<td class="nowrap">' + esc(o.province) + '</td>' +
@@ -1632,7 +1677,8 @@ function showRowDetail(idx) {
   const card = document.getElementById('detailCard');
   const fields = [
     ['办理日期', o.applyDate || '-'],
-    ['回款日期', o.paybackDate || '未回款'],
+    ['回款日期', o.paybackDate ||
+      (agingDays(o) !== null ? '未回款（已 ' + agingDays(o) + ' 天）' : '未回款')],
     ['姓名', o.name],
     ['手机号', o.phone],
     ['省份', o.province],
