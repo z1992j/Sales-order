@@ -21,6 +21,8 @@
   .container{max-width:1600px;margin:0 auto;padding:0 16px}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px auto;max-width:1600px;padding:0 16px}
   .stat-card{background:#fff;border-radius:10px;padding:14px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .stat-card.clickable{cursor:pointer;transition:box-shadow .15s,transform .15s}
+  .stat-card.clickable:hover{box-shadow:0 4px 10px rgba(0,0,0,.1);transform:translateY(-1px)}
   .stat-card .label{font-size:11px;color:#6b7280}
   .stat-card .value{font-size:20px;font-weight:700;color:#1e40af;margin-top:3px}
   .toolbar{display:flex;flex-direction:column;gap:10px;margin:12px auto;max-width:1600px;padding:0 16px}
@@ -553,7 +555,10 @@
         <input id="f_idCard" placeholder="18位身份证号" maxlength="18">
       </div>
       <div class="form-group span3">
-        <label>地址</label>
+        <label style="display:flex;justify-content:space-between;align-items:center">
+          地址
+          <button type="button" class="btn btn-sm btn-ghost" style="margin:0" onclick="fillLocationFromAddress()">从地址识别省市</button>
+        </label>
         <textarea id="f_address" rows="2" placeholder="详细地址"></textarea>
       </div>
     </div>
@@ -1090,12 +1095,14 @@ function renderStats() {
     {
       label: '本月佣金',
       value: '¥' + monthCommission.toLocaleString(),
-      extra: deltaHtml || '<div class="sub">本月新增 ' + monthNew + ' 笔</div>'
+      extra: deltaHtml || '<div class="sub">本月新增 ' + monthNew + ' 笔</div>',
+      onclick: 'setTimeRange(\'month\')'
     },
     {
       label: '佣金合计',
       value: '¥' + totalCommission.toLocaleString(),
-      extra: '<div class="sub">共 ' + total + ' 笔订单</div>'
+      extra: '<div class="sub">共 ' + total + ' 笔订单</div>',
+      onclick: 'setTimeRange(\'all\')'
     },
     {
       label: '未结佣',
@@ -1103,14 +1110,16 @@ function renderStats() {
       cls: unpaidCount > 0 ? ' warn' : '',
       extra: oldestAging !== null
         ? '<div class="sub">最久 ' + oldestAging + ' 天</div>'
-        : ''
+        : '',
+      onclick: 'applyPaybackFilter(\'unpaid\')'
     },
     { label: '运营商占比', custom: carrierBars },
   ].map(c => {
     const body = c.custom
       ? c.custom
       : '<div class="value">' + c.value + '</div>' + (c.extra || '');
-    return '<div class="stat-card' + (c.cls || '') + '"><div class="label">' + c.label + '</div>' + body + '</div>';
+    const clickable = c.onclick ? ' clickable" onclick="' + c.onclick + '" title="点击查看对应记录' : '';
+    return '<div class="stat-card' + (c.cls || '') + clickable + '"><div class="label">' + c.label + '</div>' + body + '</div>';
   }).join('');
 
 }
@@ -1333,6 +1342,16 @@ function initFilterPanel() {
   refreshFilterIndicator();
 }
 
+// 看板「未结佣」卡片点击后直接套用同名筛选，面板收起时顺手展开，否则选中的是哪个看不见
+function applyPaybackFilter(val) {
+  const sel = document.getElementById('filterPayback');
+  if (!sel) return;
+  sel.value = val;
+  const tb = document.getElementById('toolbar');
+  if (tb.classList.contains('filters-collapsed')) toggleFilters();
+  renderTable();
+}
+
 function clearAllFilters() {
   FILTER_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const from = document.getElementById('dateFrom'), to = document.getElementById('dateTo');
@@ -1369,6 +1388,16 @@ function openModal(idx) {
 
 function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
 
+// 手动录入时，从地址栏文本识别省市并回填——复用智能录入用的同一套地址解析逻辑
+function fillLocationFromAddress() {
+  const addr = f_address.value.trim();
+  if (!addr) { alert('请先填写地址'); return; }
+  const loc = extractCityFromAddress(addr);
+  if (!loc.city && !loc.province) { alert('未能从地址中识别出省市，请手动填写'); return; }
+  if (loc.city) f_city.value = loc.city;
+  if (loc.province) f_province.value = loc.province;
+}
+
 async function saveOrder() {
   if (saving) return;
   const name=f_name.value.trim(), phone=f_phone.value.trim(), pkgFee=Number(f_packageFee.value)||0;
@@ -1386,11 +1415,12 @@ async function saveOrder() {
     alert('结佣日期不能早于办理日期'); f_paybackDate.focus(); return;
   }
 
-  // 新增时提醒重复手机号
+  // 新增时提醒重复手机号；查全库（含隐藏的非本人归属记录），不只查当前视图
   if (editingIdx < 0) {
-    const dup = orders.find(o => o.phone === phone);
+    const dup = allOrders.find(o => o.phone === phone);
     if (dup && !confirm('手机号 ' + phone + ' 已存在（' + (dup.name||'') + ' · ' +
-        (dup.applyDate||'无日期') + '），仍要继续新增吗？')) return;
+        (dup.applyDate||'无日期') + (isMine(dup) ? '' : ' · 归属：' + (dup.salesPerson||'(空)')) +
+        '），仍要继续新增吗？')) return;
   }
   const commission=Number(f_commission.value)||0;
   let ratePct=Number(f_commissionRate.value);
