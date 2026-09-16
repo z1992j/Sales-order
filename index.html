@@ -50,7 +50,6 @@
   .btn-sm:last-child{margin-right:0}
   .btn-danger{background:#fee2e2;color:#dc2626}.btn-danger:hover{background:#fca5a5}
   .btn-cancel{background:#f3f4f6;color:#374151}
-  .btn-paid{background:#dcfce7;color:#16a34a;font-weight:600}.btn-paid:hover{background:#bbf7d0}
   .table-wrap{max-width:1600px;margin:0 auto 32px;padding:0 16px;overflow-x:auto}
   table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);font-size:13px}
   thead{background:#f9fafb}
@@ -1056,16 +1055,15 @@ function renderStats() {
   const lastMonthOrders = mine.filter(o => o.applyDate && o.applyDate.startsWith(lastYm));
   const monthNew = thisMonthOrders.length;
   const monthCommission = thisMonthOrders.reduce((s, o) => s + (Number(o.commission)||0), 0);
-  const lastMonthCommission = lastMonthOrders.reduce((s, o) => s + (Number(o.commission)||0), 0);
 
-  // 环比：上月为 0 时百分比没有意义，只说明是新增
+  // 环比：按订单数比，上月为 0 时百分比没有意义，只说明是新增
   let deltaHtml = '';
-  if (lastMonthCommission > 0) {
-    const pct = Math.round((monthCommission - lastMonthCommission) / lastMonthCommission * 100);
+  if (lastMonthOrders.length > 0) {
+    const pct = Math.round((monthNew - lastMonthOrders.length) / lastMonthOrders.length * 100);
     const cls = pct > 0 ? 'delta-up' : (pct < 0 ? 'delta-down' : 'delta-flat');
     const arrow = pct > 0 ? '↑' : (pct < 0 ? '↓' : '–');
     deltaHtml = '<span class="delta ' + cls + '">' + arrow + ' ' + Math.abs(pct) + '% 环比上月</span>';
-  } else if (monthCommission > 0) {
+  } else if (monthNew > 0) {
     deltaHtml = '<span class="delta delta-up">上月无订单</span>';
   }
 
@@ -1093,9 +1091,9 @@ function renderStats() {
 
   document.getElementById('stats').innerHTML = [
     {
-      label: '本月佣金',
-      value: '¥' + monthCommission.toLocaleString(),
-      extra: deltaHtml || '<div class="sub">本月新增 ' + monthNew + ' 笔</div>',
+      label: '本月订单',
+      value: monthNew + ' 笔',
+      extra: deltaHtml || '<div class="sub">本月佣金 ¥' + monthCommission.toLocaleString() + '</div>',
       onclick: 'setTimeRange(\'month\')'
     },
     {
@@ -1725,8 +1723,6 @@ function showRowDetail(idx) {
   ];
   // 只有非本人订单才显示归属，本人视图下这一行是废话
   if (!isMine(o)) fields.push(['当前归属', o.salesPerson || '(空)']);
-  const paidBtn = o.paybackDate ? '' :
-    '<button class="btn btn-sm btn-paid" onclick="markPaid(' + idx + ')">✔ 标记结佣</button>';
   const claimBtn = isMine(o) ? '' :
     '<button class="btn btn-sm btn-claim" onclick="claimOrder(' + idx + ')">归到我名下</button>';
   card.innerHTML = '<h3>订单详情 <button class="close-btn" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\')">&times;</button></h3>' +
@@ -1734,7 +1730,7 @@ function showRowDetail(idx) {
       return '<div class="detail-row"><span class="dl">' + f[0] + '</span><span class="dv">' + esc(f[1]) + '</span></div>';
     }).join('') +
     '<div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">' +
-    claimBtn + paidBtn +
+    claimBtn +
     '<button class="btn btn-sm btn-cancel" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\');editOrder(' + idx + ')">编辑</button>' +
     '<button class="btn btn-sm btn-danger" onclick="document.getElementById(\'detailOverlay\').classList.remove(\'active\');deleteOrder(' + idx + ')">删除</button>' +
     '</div>';
@@ -1853,26 +1849,6 @@ async function claimOrder(idx) {
     await loadData();
   } catch (e) {
     alert('改归属失败：' + e.message);
-  }
-}
-
-/* ========== 一键标记结佣 ========== */
-async function markPaid(idx) {
-  const o = orders[idx];
-  if (!o || o.paybackDate) return;
-  if (!confirm('确认将「' + (o.name || '该订单') + '」标记为今日（' + todayStr() + '）结佣？')) return;
-  await ensureFreshSession();
-  try {
-    const res = await fetch(REST + '?id=eq.' + encodeURIComponent(o.id), {
-      method: 'PATCH',
-      headers: HEADERS(),
-      body: JSON.stringify({ payback_date: todayStr() })
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
-    document.getElementById('detailOverlay').classList.remove('active');
-    await loadData();
-  } catch (e) {
-    alert('标记失败：' + e.message);
   }
 }
 
