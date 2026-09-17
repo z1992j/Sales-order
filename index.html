@@ -32,6 +32,7 @@
   .tb-row-filters .ctrl{border-color:transparent;background:#f9fafb;min-width:120px}
   .tb-row-filters .ctrl:hover{border-color:#e5e7eb;background:#fff}
   .tb-row-filters .ctrl:focus{background:#fff;border-color:#3b82f6}
+  .tb-row-filters .sep{width:1px;align-self:stretch;background:#e5e7eb;margin:0 2px}
   .tb-row-time{justify-content:space-between}
   .tb-actions{display:flex;gap:8px;flex-shrink:0}
   .tb-actions-secondary .btn{font-size:12px}
@@ -131,17 +132,18 @@
   /* 套餐原始数据大小写不一，显示时统一为大写，列看起来才齐 */
   .col-package{text-transform:uppercase}
 
-  /* --- Time range filter pills --- */
-  .time-filter{display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex:1;min-width:0}
-  .time-filter .pill-group{display:flex;gap:0;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb}
-  .time-filter .pill{padding:6px 14px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:#fff;color:#374151;transition:.15s;white-space:nowrap}
-  .time-filter .pill:not(:last-child){border-right:1px solid #e5e7eb}
-  .time-filter .pill:hover{background:#f0f9ff}
-  .time-filter .pill.active{background:#1e40af;color:#fff}
-  .time-filter .date-range{display:flex;gap:6px;align-items:center}
-  .time-filter .date-range span{font-size:12px;color:#6b7280}
-  .time-filter .date-range input[type="date"]{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-size:12px;color:#374151;outline:none;cursor:pointer;transition:.15s}
-  .time-filter .date-range input[type="date"]:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+  /* --- 结佣状态筛选：一眼看到、一下点中，不用先展开下拉 --- */
+  .chip{padding:7px 14px;border:1px solid #e5e7eb;border-radius:999px;background:#fff;color:#374151;
+        font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:.15s}
+  .chip:hover{border-color:#cbd5e1;background:#f9fafb}
+  .chip.active{background:#1e40af;border-color:#1e40af;color:#fff}
+  .chip-unpaid.active{background:#dc2626;border-color:#dc2626}
+  /* 逾期档是「未结佣」的下一级，选中未结佣后才出现，平时不占地方 */
+  .chip-sub{display:none;gap:6px;align-items:center}
+  .chip-sub.visible{display:inline-flex}
+  .chip-sub::before{content:'›';color:#9ca3af;font-size:14px;margin-right:-2px}
+  .chip-sm{padding:5px 10px;font-size:11.5px}
+  .chip-sm.active{background:#b45309;border-color:#b45309}
 
   /* --- CSV import preview --- */
   .csv-preview-table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
@@ -232,21 +234,14 @@
   .delta-down{background:#fee2e2;color:#dc2626}
   .delta-flat{background:#f3f4f6;color:#6b7280}
 
-  /* --- Filter panel toggle --- */
-  .filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .btn-filter{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
-              font-size:12px;font-weight:500;cursor:pointer;background:#fff;color:#374151;
-              border:1px solid #e5e7eb;transition:.15s}
-  .btn-filter:hover{border-color:#cbd5e1;background:#f9fafb}
-  .btn-filter.has-active{border-color:#3b82f6;color:#1e40af;background:#eff6ff}
+  /* --- 清除筛选：平时不出现，有筛选条件时才顶到最右 --- */
+  .btn-clear-filters{display:none;align-items:center;gap:5px;margin-left:auto;background:transparent;
+                     border:none;color:#6b7280;font-size:12px;cursor:pointer;padding:6px 10px;
+                     border-radius:6px;white-space:nowrap}
+  .btn-clear-filters.visible{display:inline-flex}
+  .btn-clear-filters:hover{color:#dc2626;background:#fef2f2}
   .filter-count{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;
                 padding:0 5px;border-radius:999px;background:#1e40af;color:#fff;font-size:10px;font-weight:700}
-  .btn-filter .chev{transition:transform .15s}
-  .btn-filter.open .chev{transform:rotate(180deg)}
-  .toolbar.filters-collapsed .tb-row-filters{display:none}
-  .btn-clear-filters{background:transparent;border:none;color:#6b7280;font-size:12px;cursor:pointer;
-                     padding:6px 8px;border-radius:6px}
-  .btn-clear-filters:hover{color:#dc2626;background:#fef2f2}
 
   /* --- Sticky table header + footer --- */
   .table-wrap{max-height:calc(100vh - 200px);min-height:280px;overflow:auto}
@@ -270,26 +265,19 @@
     .toolbar{flex-direction:column;align-items:stretch;padding:0 12px;gap:8px}
     .search-box{max-width:100%}
     .tb-row{flex-direction:column;align-items:stretch;gap:8px}
-    .tb-row-filters{padding:8px}
-    .tb-row-filters .ctrl{min-width:0;width:100%}
+    /* 筛选行仍按行排布：四个下拉两两一行，状态胶囊各占一行宽度 */
+    .tb-row-filters{padding:8px;flex-direction:row;flex-wrap:wrap;gap:6px}
+    .tb-row-filters .ctrl{flex:1 1 calc(50% - 3px);min-width:0;width:auto}
+    .tb-row-filters .sep{display:none}
+    .chip{flex:1 1 calc(50% - 3px);text-align:center;padding:9px 10px}
+    .chip-sub.visible{display:flex;width:100%;gap:6px}
+    .chip-sub::before{display:none}
+    .chip-sm{flex:1 1 0;padding:8px 6px}
     .tb-actions,.tb-actions-secondary{flex-wrap:wrap;gap:6px}
     .tb-actions .btn,.tb-actions-secondary .btn{flex:1;min-width:100px;justify-content:center}
-    .time-filter{flex-direction:column;align-items:stretch;gap:8px}
-    .time-filter .pill-group{display:grid;grid-template-columns:repeat(3,1fr)}
-    .time-filter .pill{padding:9px 4px;text-align:center}
-    .time-filter .pill:nth-child(3n){border-right:none}
-    .time-filter .pill:nth-child(-n+3){border-bottom:1px solid #e5e7eb}
-    /* 日期输入在 iOS 上没有内容时会塌成一个空白小圆角，必须显式撑开 */
-    .time-filter .date-range{width:100%;gap:8px}
-    .time-filter .date-range input[type="date"]{flex:1;min-width:0;width:100%;
-        min-height:38px;padding:9px 10px;font-size:13px;text-align:center;
-        -webkit-appearance:none;appearance:none}
-    .time-filter .date-range span{flex-shrink:0}
-    /* 筛选按钮独占一行时拉满，与上下两行同宽 */
-    .filter-bar{width:100%}
-    .btn-filter{flex:1;justify-content:center;padding:9px 14px}
+    .btn-clear-filters.visible{display:flex;width:100%;margin-left:0;justify-content:center}
     /* 各行控件统一高度，否则搜索框、筛选、按钮三行高矮不一 */
-    .search-box,.btn-filter,.tb-row-filters .ctrl,
+    .search-box,.tb-row-filters .ctrl,.chip,
     .tb-actions .btn,.tb-actions-secondary .btn{min-height:42px}
     .search-box input{padding:11px 8px}
     .tb-actions .btn,.tb-actions-secondary .btn{padding:11px 14px}
@@ -373,43 +361,47 @@
 <div class="trend-wrap" id="trendWrap"></div>
 
 <div class="toolbar" id="toolbar">
-  <!-- Row 1: 搜索 + 筛选开关 + 主操作 -->
+  <!-- Row 1: 搜索 + 主操作 -->
   <div class="tb-row tb-row-main">
     <div class="search-box">
       <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="searchInput" placeholder="搜索姓名、手机、城市、套餐…" oninput="renderTable()">
-    </div>
-    <div class="filter-bar">
-      <button class="btn-filter" id="filterToggle" onclick="toggleFilters()">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-        筛选<span id="filterCount"></span>
-        <svg class="chev" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <button class="btn-clear-filters" id="clearFilters" onclick="clearAllFilters()" style="display:none">清除</button>
     </div>
     <div class="tb-actions">
       <button class="btn btn-smart" onclick="openSmartModal()">&#9889; 智能录入</button>
       <button class="btn btn-primary" onclick="openModal()">+ 新增订单</button>
     </div>
   </div>
-  <!-- Row 2: 全部下拉筛选器 -->
+  <!-- Row 2: 日常筛选 —— 月份 / 省份 / 城市 / 运营商 / 结佣状态，常驻不折叠 -->
   <div class="tb-row tb-row-filters">
+    <select class="ctrl" id="filterMonth" onchange="renderTable()">
+      <option value="">全部时间</option>
+    </select>
+    <select class="ctrl" id="filterProvince" onchange="onProvinceChange()">
+      <option value="">全部省份</option>
+    </select>
+    <select class="ctrl" id="filterCity" onchange="renderTable()">
+      <option value="">全部城市</option>
+    </select>
     <select class="ctrl" id="filterCarrier" onchange="renderTable()">
       <option value="">全部运营商</option>
       <option value="联通">联通</option>
       <option value="移动">移动</option>
       <option value="电信">电信</option>
     </select>
-    <select class="ctrl" id="filterProvince" onchange="renderTable()">
-      <option value="">全部省份</option>
-    </select>
-    <select class="ctrl" id="filterPayback" onchange="renderTable()">
-      <option value="">结佣状态：全部</option>
-      <option value="paid">已结佣</option>
-      <option value="unpaid">未结佣</option>
-      <option value="over30">未结佣 · 逾 30 天</option>
-      <option value="over60">未结佣 · 逾 60 天</option>
-    </select>
+    <span class="sep"></span>
+    <button class="chip chip-unpaid" id="chipUnpaid" onclick="togglePaybackFilter('unpaid')">未结佣</button>
+    <span class="chip-sub" id="agingChips">
+      <button class="chip chip-sm" id="chipOver30" onclick="togglePaybackFilter('over30')">逾 30 天</button>
+      <button class="chip chip-sm" id="chipOver60" onclick="togglePaybackFilter('over60')">逾 60 天</button>
+    </span>
+    <button class="chip" id="chipPaid" onclick="togglePaybackFilter('paid')">已结佣</button>
+    <button class="btn-clear-filters" id="clearFilters" onclick="clearAllFilters()">
+      ✕ 清除筛选<span id="filterCount"></span>
+    </button>
+  </div>
+  <!-- Row 3: 排序 + 次级操作 -->
+  <div class="tb-row tb-row-time">
     <select class="ctrl" id="sortBy" onchange="renderTable()">
       <option value="apply_desc">办理日期 ↓</option>
       <option value="apply_asc">办理日期 ↑</option>
@@ -422,24 +414,6 @@
       <option value="commissionRate_desc">佣金率 ↓</option>
       <option value="commissionRate_asc">佣金率 ↑</option>
     </select>
-  </div>
-  <!-- Row 3: 时间范围 + 次级操作 -->
-  <div class="tb-row tb-row-time">
-    <div class="time-filter" id="timeFilter">
-      <div class="pill-group">
-        <button class="pill" data-range="today" onclick="setTimeRange('today')">今天</button>
-        <button class="pill" data-range="week" onclick="setTimeRange('week')">本周</button>
-        <button class="pill" data-range="month" onclick="setTimeRange('month')">本月</button>
-        <button class="pill" data-range="lastMonth" onclick="setTimeRange('lastMonth')">上月</button>
-        <button class="pill" data-range="year" onclick="setTimeRange('year')">本年</button>
-        <button class="pill active" data-range="all" onclick="setTimeRange('all')">全部</button>
-      </div>
-      <div class="date-range">
-        <input type="date" id="dateFrom" class="ctrl" style="padding:6px 10px;font-size:12px;background-image:none" onchange="onCustomDateChange()">
-        <span>至</span>
-        <input type="date" id="dateTo" class="ctrl" style="padding:6px 10px;font-size:12px;background-image:none" onchange="onCustomDateChange()">
-      </div>
-    </div>
     <div class="tb-actions tb-actions-secondary">
       <button class="btn btn-ghost" onclick="exportCSV()">⬇ 导出 CSV</button>
       <button class="btn btn-ghost" onclick="triggerCSVImport()">⬆ 导入 CSV</button>
@@ -790,7 +764,6 @@ function enterApp() {
   } else if (banner) {
     banner.classList.remove('visible');
   }
-  initFilterPanel();
   loadData();
 }
 
@@ -1029,6 +1002,7 @@ async function loadData() {
 }
 
 function refreshFilterOptions() {
+  refreshMonthOptions();
   const sel = document.getElementById('filterProvince');
   if (!sel) return;
   const prev = sel.value;
@@ -1038,6 +1012,53 @@ function refreshFilterOptions() {
   sel.innerHTML = '<option value="">全部省份</option>' +
     provinces.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
   if (provinces.includes(prev)) sel.value = prev;
+  refreshCityOptions();
+}
+
+/* 月份筛选值就是日期前缀：'' 全部、'2026' 整年、'2026-09' 单月，
+   所以匹配逻辑一句 startsWith 就够，不必再维护起止日期两个输入框。 */
+function refreshMonthOptions() {
+  const sel = document.getElementById('filterMonth');
+  if (!sel) return;
+  const prev = sel.value;
+  const months = new Set(orders.map(o => (o.applyDate || '').slice(0, 7)).filter(m => m.length === 7));
+  months.add(todayStr().slice(0, 7));   // 本月没单也要能选，看板「本月订单」要跳过来
+  const byYear = new Map();
+  Array.from(months).sort().reverse().forEach(m => {
+    const y = m.slice(0, 4);
+    if (!byYear.has(y)) byYear.set(y, []);
+    byYear.get(y).push(m);
+  });
+  let html = '<option value="">全部时间</option>';
+  for (const [year, list] of byYear) {
+    html += '<optgroup label="' + year + '">' +
+      '<option value="' + year + '">' + year + ' 全年</option>' +
+      list.map(m => '<option value="' + m + '">' + m.replace('-', ' 年 ') + ' 月</option>').join('') +
+      '</optgroup>';
+  }
+  sel.innerHTML = html;
+  sel.value = prev;
+  if (sel.value !== prev) sel.value = '';   // 原来选的月份已无数据，退回全部
+}
+
+// 城市跟着省份走：选了省份就只列该省的城市，避免一长串跨省城市
+function refreshCityOptions() {
+  const sel = document.getElementById('filterCity');
+  if (!sel) return;
+  const prev = sel.value;
+  const province = document.getElementById('filterProvince').value;
+  const cities = Array.from(new Set(
+    orders.filter(o => !province || o.province === province)
+          .map(o => o.city).filter(Boolean)
+  )).sort((a,b) => a.localeCompare(b,'zh-CN'));
+  sel.innerHTML = '<option value="">全部城市</option>' +
+    cities.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  sel.value = cities.includes(prev) ? prev : '';
+}
+
+function onProvinceChange() {
+  refreshCityOptions();
+  renderTable();
 }
 
 function renderStats() {
@@ -1094,13 +1115,13 @@ function renderStats() {
       label: '本月订单',
       value: monthNew + ' 笔',
       extra: deltaHtml || '<div class="sub">本月佣金 ¥' + monthCommission.toLocaleString() + '</div>',
-      onclick: 'setTimeRange(\'month\')'
+      onclick: 'setMonthFilter(\'' + ym + '\')'
     },
     {
       label: '佣金合计',
       value: '¥' + totalCommission.toLocaleString(),
       extra: '<div class="sub">共 ' + total + ' 笔订单</div>',
-      onclick: 'setTimeRange(\'all\')'
+      onclick: 'setMonthFilter(\'\')'
     },
     {
       label: '未结佣',
@@ -1176,22 +1197,21 @@ function getFilteredOrders() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const carrierFilter = document.getElementById('filterCarrier').value;
   const provinceFilter = document.getElementById('filterProvince').value;
-  const paybackFilter = document.getElementById('filterPayback').value;
+  const cityFilter = document.getElementById('filterCity').value;
+  const monthFilter = document.getElementById('filterMonth').value;
   const sortVal = document.getElementById('sortBy').value;
-  const dateFrom = (document.getElementById('dateFrom')||{}).value || '';
-  const dateTo = (document.getElementById('dateTo')||{}).value || '';
   let filtered = orders.filter(o => {
     if (q && !((o.name||'').toLowerCase().includes(q) || (o.phone||'').includes(q) ||
                (o.city||'').toLowerCase().includes(q) || (o.package||'').toLowerCase().includes(q) ||
                (o.province||'').toLowerCase().includes(q) || (o.carrier||'').toLowerCase().includes(q))) return false;
     if (carrierFilter && o.carrier !== carrierFilter) return false;
     if (provinceFilter && o.province !== provinceFilter) return false;
+    if (cityFilter && o.city !== cityFilter) return false;
+    if (monthFilter && !(o.applyDate || '').startsWith(monthFilter)) return false;
     if (paybackFilter === 'paid' && !o.paybackDate) return false;
     if (paybackFilter === 'unpaid' && o.paybackDate) return false;
     if (paybackFilter === 'over30' && !(agingDays(o) >= 30)) return false;
     if (paybackFilter === 'over60' && !(agingDays(o) >= 60)) return false;
-    if (dateFrom && (!o.applyDate || o.applyDate < dateFrom)) return false;
-    if (dateTo && (!o.applyDate || o.applyDate > dateTo)) return false;
     return true;
   });
 
@@ -1301,62 +1321,68 @@ function hideOfflineBanner() {
 // 网络恢复后自动重新拉取
 window.addEventListener('online', () => { if (usingCachedData) loadData(); });
 
-/* ========== 筛选面板 ========== */
-const FILTER_IDS = ['filterCarrier', 'filterProvince', 'filterPayback'];
+/* ========== 筛选 ==========
+   下拉部分（月份/省份/城市/运营商）直接以 DOM 为准；结佣状态用胶囊，
+   状态存在这里：'' | 'unpaid' | 'over30' | 'over60' | 'paid'。
+   逾期两档是「未结佣」的子集，所以选中它们时父胶囊也算选中。 */
+const FILTER_IDS = ['filterMonth', 'filterProvince', 'filterCity', 'filterCarrier'];
+let paybackFilter = '';
+
+function isUnpaidFilter() {
+  return paybackFilter === 'unpaid' || paybackFilter === 'over30' || paybackFilter === 'over60';
+}
+
+// 胶囊点自己 = 取消；点逾期档再点一次退回「未结佣」，不会整个清空
+function togglePaybackFilter(val) {
+  if (paybackFilter === val) {
+    paybackFilter = (val === 'over30' || val === 'over60') ? 'unpaid' : '';
+  } else {
+    paybackFilter = val;
+  }
+  renderTable();
+}
+
+// 看板卡片用：直接套用，不做反选
+function applyPaybackFilter(val) {
+  paybackFilter = val;
+  renderTable();
+}
+
+function setMonthFilter(val) {
+  const sel = document.getElementById('filterMonth');
+  if (!sel) return;
+  sel.value = val;
+  if (sel.value !== val) sel.value = '';   // 该月不在选项里（无数据）时退回全部
+  renderTable();
+}
+
+function renderPaybackChips() {
+  const unpaidOn = isUnpaidFilter();
+  document.getElementById('chipUnpaid').classList.toggle('active', unpaidOn);
+  document.getElementById('chipPaid').classList.toggle('active', paybackFilter === 'paid');
+  document.getElementById('chipOver30').classList.toggle('active', paybackFilter === 'over30');
+  document.getElementById('chipOver60').classList.toggle('active', paybackFilter === 'over60');
+  document.getElementById('agingChips').classList.toggle('visible', unpaidOn);
+}
 
 function activeFilterCount() {
-  let n = FILTER_IDS.filter(id => (document.getElementById(id) || {}).value).length;
-  const from = (document.getElementById('dateFrom') || {}).value;
-  const to = (document.getElementById('dateTo') || {}).value;
-  if (from || to) n++;
-  return n;
+  return FILTER_IDS.filter(id => (document.getElementById(id) || {}).value).length +
+         (paybackFilter ? 1 : 0);
 }
 
 function refreshFilterIndicator() {
+  renderPaybackChips();
   const n = activeFilterCount();
-  const btn = document.getElementById('filterToggle');
   const badge = document.getElementById('filterCount');
   const clear = document.getElementById('clearFilters');
   if (badge) badge.innerHTML = n ? ' <span class="filter-count">' + n + '</span>' : '';
-  if (btn) btn.classList.toggle('has-active', n > 0);
-  if (clear) clear.style.display = n > 0 ? '' : 'none';
-}
-
-function toggleFilters() {
-  const tb = document.getElementById('toolbar');
-  const collapsed = tb.classList.toggle('filters-collapsed');
-  document.getElementById('filterToggle').classList.toggle('open', !collapsed);
-  try { localStorage.setItem('salesOrderFiltersCollapsed', collapsed ? '1' : '0'); } catch (e) {}
-}
-
-function initFilterPanel() {
-  const tb = document.getElementById('toolbar');
-  let collapsed;
-  try { collapsed = localStorage.getItem('salesOrderFiltersCollapsed'); } catch (e) { collapsed = null; }
-  // 没存过偏好时，窄屏默认收起，宽屏默认展开
-  if (collapsed === null) collapsed = window.innerWidth <= 768 ? '1' : '0';
-  tb.classList.toggle('filters-collapsed', collapsed === '1');
-  document.getElementById('filterToggle').classList.toggle('open', collapsed !== '1');
-  refreshFilterIndicator();
-}
-
-// 看板「未结佣」卡片点击后直接套用同名筛选，面板收起时顺手展开，否则选中的是哪个看不见
-function applyPaybackFilter(val) {
-  const sel = document.getElementById('filterPayback');
-  if (!sel) return;
-  sel.value = val;
-  const tb = document.getElementById('toolbar');
-  if (tb.classList.contains('filters-collapsed')) toggleFilters();
-  renderTable();
+  if (clear) clear.classList.toggle('visible', n > 0);
 }
 
 function clearAllFilters() {
   FILTER_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  const from = document.getElementById('dateFrom'), to = document.getElementById('dateTo');
-  if (from) from.value = '';
-  if (to) to.value = '';
-  document.querySelectorAll('.time-filter .pill').forEach(p =>
-    p.classList.toggle('active', p.dataset.range === 'all'));
+  paybackFilter = '';
+  refreshCityOptions();
   renderTable();
 }
 
@@ -1861,43 +1887,6 @@ document.addEventListener('keydown', e => {
     if (el && el.classList.contains('active')) { el.classList.remove('active'); return; }
   }
 });
-
-/* ========== 功能 4：时间范围筛选 ========== */
-function setTimeRange(range) {
-  const pills = document.querySelectorAll('.time-filter .pill');
-  pills.forEach(p => p.classList.toggle('active', p.dataset.range === range));
-  const from = document.getElementById('dateFrom');
-  const to = document.getElementById('dateTo');
-  const today = new Date();
-  const fmt = ymd;
-
-  if (range === 'all') {
-    from.value = ''; to.value = '';
-  } else if (range === 'today') {
-    from.value = fmt(today); to.value = fmt(today);
-  } else if (range === 'week') {
-    const day = today.getDay() || 7;
-    const monday = new Date(today); monday.setDate(today.getDate() - day + 1);
-    from.value = fmt(monday); to.value = fmt(today);
-  } else if (range === 'month') {
-    from.value = fmt(new Date(today.getFullYear(), today.getMonth(), 1));
-    to.value = fmt(today);
-  } else if (range === 'lastMonth') {
-    const lmStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const lmEnd = new Date(today.getFullYear(), today.getMonth(), 0);
-    from.value = fmt(lmStart); to.value = fmt(lmEnd);
-  } else if (range === 'year') {
-    from.value = fmt(new Date(today.getFullYear(), 0, 1));
-    to.value = fmt(today);
-  }
-  renderTable();
-}
-
-function onCustomDateChange() {
-  const pills = document.querySelectorAll('.time-filter .pill');
-  pills.forEach(p => p.classList.remove('active'));
-  renderTable();
-}
 
 /* ========== 功能 3：CSV 批量导入 ==========
    按表头名称匹配列，因此列顺序变化、多余列、缺列都不会导致数据错位。 */
