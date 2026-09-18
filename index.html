@@ -59,9 +59,11 @@
   td.nowrap{white-space:nowrap}
   tr:hover td{background:#f8fafc}
   .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500}
-  .badge-unicom{background:#dbeafe;color:#2563eb}
-  .badge-mobile{background:#dcfce7;color:#16a34a}
-  .badge-telecom{background:#fef9c3;color:#ca8a04}
+  /* 徽章底色与分析图里的运营商识别色同源，全站认色一致。
+     文字本身写着运营商名，颜色只是强化，不承担唯一识别。 */
+  .badge-unicom{background:#e4eefb;color:#1f5aa3}
+  .badge-mobile{background:#fce9e0;color:#a8431c}
+  .badge-telecom{background:#dcf3ea;color:#157954}
   .empty{text-align:center;padding:48px 16px;color:#9ca3af}
   .text-right{text-align:right}
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
@@ -215,8 +217,10 @@
                  align-items:center;flex-wrap:wrap;gap:8px}
   .trend-card h3 .hint{font-size:11px;font-weight:400;color:#9ca3af;margin-left:auto}
   .trend-svg{width:100%;height:auto;max-height:170px;display:block}
-  .trend-bar{fill:#3b82f6;transition:fill .15s}
-  .trend-bar:hover{fill:#1e40af}
+  /* 柱子的颜色由 fill 属性直接给（已结佣/未结佣两段），
+     这里只做悬停反馈；选中月/当月整组略微加重。 */
+  .trend-bar-g rect{transition:opacity .15s}
+  .trend-bar-g:hover rect{opacity:.8}
   .trend-label{font-size:10px;fill:#9ca3af}
   .trend-value{font-size:10px;fill:#1e40af;font-weight:600}
   .trend-empty{text-align:center;color:#9ca3af;font-size:12px;padding:24px 0}
@@ -224,7 +228,63 @@
   .trend-toggle button{padding:4px 12px;font-size:11px;border:none;background:#fff;color:#6b7280;cursor:pointer;transition:.15s}
   .trend-toggle button:not(:last-child){border-right:1px solid #e5e7eb}
   .trend-toggle button.active{background:#1e40af;color:#fff}
-  .trend-bar.current{fill:#1e40af}
+  /* 选中月/当月：加一圈同色描边点一下，不改柱子本身的颜色语义 */
+  .trend-bar-g.current rect{stroke:rgba(30,64,175,.35);stroke-width:1}
+  .trend-bar-g.current rect[fill="transparent"]{stroke:none}
+
+  /* --- 分析区：账龄分布 / 运营商表现 / 地区 Top5 ---
+     配色取自经 validate_palette.js 校验的分类槽（原来的移动绿 vs 电信黄
+     在色盲模拟下 ΔE 仅 4.2，几乎分不开）。三色槽 all-pairs 全项通过。
+     青色对白底对比度 2.82:1，靠每根条自带的文字标签补足，不单靠颜色识别。 */
+  :root{
+    --c-unicom:#2a78d6;   /* 联通 */
+    --c-mobile:#eb6834;   /* 移动 */
+    --c-telecom:#1baf7a;  /* 电信 */
+    --c-settled:#2a78d6;  /* 已结佣 */
+    --c-unsettled:#e0952a;/* 未结佣 */
+    --c-region:#2a78d6;   /* 地区条：单一色相，不按大小变深，避免把长度重复编码成颜色 */
+    --grid-line:#e5e7eb;
+    --ink-2:#6b7280;
+    --ink-3:#9ca3af;
+  }
+  .scope-line{max-width:1600px;margin:12px auto 0;padding:0 16px;font-size:11.5px;color:#6b7280}
+  .scope-line b{color:#374151;font-weight:600}
+  .analysis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px;
+                 max-width:1600px;margin:0 auto 12px;padding:0 16px}
+  .an-card{background:#fff;border-radius:10px;padding:14px 18px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .an-card h3{font-size:13px;font-weight:600;color:#374151;margin-bottom:2px}
+  .an-card .an-hint{font-size:11px;color:var(--ink-3);margin-bottom:12px}
+  .an-empty{color:var(--ink-3);font-size:12px;padding:18px 0;text-align:center}
+
+  /* 条形行：标签 + 条 + 数值，标签常驻，颜色只做强化 */
+  .an-row{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:10px;padding:5px 0}
+  .an-row.clickable{cursor:pointer;border-radius:6px;margin:0 -6px;padding:5px 6px}
+  .an-row.clickable:hover{background:#f8fafc}
+  .an-label{font-size:12px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .an-track{height:10px;background:#f3f4f6;border-radius:5px;overflow:hidden}
+  /* 4px 圆角数据端、方底：条从基线长出来 */
+  .an-fill{height:100%;border-radius:0 4px 4px 0;min-width:2px;transition:width .3s}
+  .an-val{font-size:11.5px;color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .an-val b{color:#1f2937;font-weight:600}
+
+  /* 运营商表现：四列紧凑表，条只在「佣金占比」那列 */
+  .an-table{width:100%;border-collapse:collapse;font-size:12px}
+  .an-table th{font-size:10.5px;font-weight:500;color:var(--ink-3);text-align:right;padding:0 0 6px;white-space:nowrap}
+  .an-table th:first-child,.an-table th:nth-child(2){text-align:left}
+  .an-table td{padding:6px 0;border-top:1px solid #f3f4f6;text-align:right;
+               font-variant-numeric:tabular-nums;color:#1f2937;white-space:nowrap}
+  .an-table td:first-child,.an-table td:nth-child(2){text-align:left}
+  .an-table tr.clickable{cursor:pointer}
+  .an-table tr.clickable:hover td{background:#f8fafc}
+  .an-swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+  .an-share{display:flex;align-items:center;gap:7px;min-width:110px}
+  .an-share .an-track{flex:1}
+  .an-muted{color:var(--ink-3)}
+
+  /* 图例：两个及以上系列必须有，识别不能只靠颜色 */
+  .an-legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--ink-2)}
+  .an-legend span{display:inline-flex;align-items:center;gap:5px}
+  .an-legend i{width:9px;height:9px;border-radius:2px;display:inline-block}
 
   /* --- Stat card detail --- */
   .stat-card .sub{font-size:11px;color:#6b7280;margin-top:5px}
@@ -253,6 +313,11 @@
   .offline-banner{display:none;background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3;
                   padding:9px 18px;border-radius:8px;margin:10px auto;max-width:1600px;font-size:12px}
   .offline-banner.visible{display:block}
+
+  /* --- 数据被接口上限截断：会导致统计算少，必须显眼 --- */
+  .trunc-banner{display:none;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;
+                padding:9px 18px;border-radius:8px;margin:10px auto;max-width:1600px;font-size:12px;line-height:1.6}
+  .trunc-banner.visible{display:block}
 
 
   /* --- Mobile responsive --- */
@@ -311,6 +376,14 @@
     .table-wrap thead th:last-child,.table-wrap tbody td:last-child{display:none}
     /* Make visible rows tappable */
     tr[data-idx]{cursor:pointer}
+    .scope-line{padding:0 12px}
+    .analysis-grid{grid-template-columns:1fr;padding:0 12px;gap:8px}
+    .an-card{padding:12px 14px 14px}
+    /* 窄屏标签列收窄，把宽度让给条和数值，避免三列挤成一团 */
+    .an-row{grid-template-columns:56px 1fr auto;gap:8px}
+    .an-val{font-size:11px}
+    .an-table th,.an-table td{font-size:11.5px}
+    .an-share{min-width:78px}
     .trend-wrap{padding:0 12px}
     .trend-card{padding:12px 14px 8px}
     .trend-svg{max-height:none}
@@ -357,15 +430,18 @@
 <div class="setup-banner" id="setupBanner"></div>
 <div class="other-view-banner" id="otherViewBanner">你正在查看<b>非本人名下</b>的历史记录。这里的编辑、删除、改归属都会直接写入数据库；新增订单仍会记在自己名下。清理完点页头的「返回我的订单」。</div>
 <div class="offline-banner" id="offlineBanner"></div>
+<div class="trunc-banner" id="truncBanner"></div>
+<div class="scope-line" id="scopeLine"></div>
 <div class="stats" id="stats"></div>
 <div class="trend-wrap" id="trendWrap"></div>
+<div class="analysis-grid" id="analysisGrid"></div>
 
 <div class="toolbar" id="toolbar">
   <!-- Row 1: 搜索 + 主操作 -->
   <div class="tb-row tb-row-main">
     <div class="search-box">
       <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="searchInput" placeholder="搜索姓名、手机、城市、套餐…" oninput="renderTable()">
+      <input type="text" id="searchInput" placeholder="搜索姓名、手机、城市、套餐…" oninput="renderAll()">
     </div>
     <div class="tb-actions">
       <button class="btn btn-smart" onclick="openSmartModal()">&#9889; 智能录入</button>
@@ -374,16 +450,16 @@
   </div>
   <!-- Row 2: 日常筛选 —— 月份 / 省份 / 城市 / 运营商 / 结佣状态，常驻不折叠 -->
   <div class="tb-row tb-row-filters">
-    <select class="ctrl" id="filterMonth" onchange="renderTable()">
+    <select class="ctrl" id="filterMonth" onchange="renderAll()">
       <option value="">全部时间</option>
     </select>
     <select class="ctrl" id="filterProvince" onchange="onProvinceChange()">
       <option value="">全部省份</option>
     </select>
-    <select class="ctrl" id="filterCity" onchange="renderTable()">
+    <select class="ctrl" id="filterCity" onchange="renderAll()">
       <option value="">全部城市</option>
     </select>
-    <select class="ctrl" id="filterCarrier" onchange="renderTable()">
+    <select class="ctrl" id="filterCarrier" onchange="renderAll()">
       <option value="">全部运营商</option>
       <option value="联通">联通</option>
       <option value="移动">移动</option>
@@ -875,7 +951,7 @@ function toggleView() {
   viewMode = viewMode === 'others' ? 'mine' : 'others';
   applyView();
   refreshFilterOptions();
-  renderStats(); renderTrend(); renderTable();
+  renderAll();
   document.getElementById('lastUpdate').textContent =
     statusLine('最后更新：' + new Date().toLocaleString('zh-CN'));
 }
@@ -907,6 +983,20 @@ function readCachedOrders() {
 
 function clearCachedOrders() {
   try { localStorage.removeItem(DATA_CACHE_KEY); } catch (e) {}
+}
+
+// 服务端说有多少条但这次没全给：> 0 表示被截断了，界面必须提示
+let truncatedTotal = 0;
+// 读不到总数（跨域下 Content-Range 需要服务端 expose）且条数已经很多时，
+// 无法证明数据取全了。这种「查不了」也要说出来，否则守卫本身就是静默失效的。
+let countUnverified = false;
+const COUNT_SUSPICIOUS_AT = 1000;   // 常见的单次返回上限
+
+// Content-Range 形如 "0-999/1350"
+function parseTotalCount(header, got) {
+  const total = parseInt(String(header || '').split('/')[1], 10);
+  countUnverified = !isFinite(total) && got >= COUNT_SUSPICIOUS_AT;
+  return (isFinite(total) && total > got) ? total : 0;
 }
 
 // 本地日期格式化：避免 toISOString() 因 UTC 时区导致日期偏移一天
@@ -963,12 +1053,17 @@ async function loadData() {
   document.getElementById('lastUpdate').textContent = '数据加载中…';
   await ensureFreshSession();
   try {
-    const res = await fetch(REST + '?select=*&order=apply_date.desc.nullslast,created_at.desc', { headers: HEADERS() });
+    // count=exact 让 Supabase 在 Content-Range 里回总行数。接口有默认返回上限，
+    // 超出会被静默截断——不比对的话统计和合计会悄悄算少，这是会「算错钱」的。
+    const res = await fetch(REST + '?select=*&order=apply_date.desc.nullslast,created_at.desc', {
+      headers: Object.assign(HEADERS(), { 'Prefer': 'count=exact' })
+    });
     if (res.status === 401 || res.status === 403) {
       throw new Error('无访问权限（' + res.status + '），请重新登录或检查 Supabase RLS 配置');
     }
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
+    truncatedTotal = parseTotalCount(res.headers.get('Content-Range'), rows.length);
     allOrders = rows.map(fromRow);
     applyView();
     usingCachedData = false;
@@ -978,25 +1073,25 @@ async function loadData() {
     const cached = readCachedOrders();
     if (cached) {
       allOrders = cached.rows.map(fromRow);
+      truncatedTotal = 0; countUnverified = false;   // 缓存里就这些，无从判断是否截断
       applyView();
       usingCachedData = true;
       showOfflineBanner(cached.at, e.message);
       refreshFilterOptions();
-      renderStats(); renderTrend(); renderTable();
+      renderAll();
       document.getElementById('lastUpdate').textContent =
         statusLine('离线数据，缓存于 ' + new Date(cached.at).toLocaleString('zh-CN'));
       return;
     }
     orders = [];
+    truncatedTotal = 0; countUnverified = false;
     document.getElementById('lastUpdate').textContent = '加载失败：' + e.message;
-    renderStats(); renderTrend(); renderTable();
+    renderAll();
     return;
   }
   hideOfflineBanner();
   refreshFilterOptions();
-  renderStats();
-  renderTrend();
-  renderTable();
+  renderAll();
   document.getElementById('lastUpdate').textContent =
     statusLine('最后更新：' + new Date().toLocaleString('zh-CN'));
 }
@@ -1010,7 +1105,7 @@ function refreshFilterOptions() {
     orders.map(o => o.province).filter(Boolean)
   )).sort((a,b) => a.localeCompare(b,'zh-CN'));
   sel.innerHTML = '<option value="">全部省份</option>' +
-    provinces.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+    provinces.map(p => `<option value="${escAttr(p)}">${esc(p)}</option>`).join('');
   if (provinces.includes(prev)) sel.value = prev;
   refreshCityOptions();
 }
@@ -1052,28 +1147,65 @@ function refreshCityOptions() {
           .map(o => o.city).filter(Boolean)
   )).sort((a,b) => a.localeCompare(b,'zh-CN'));
   sel.innerHTML = '<option value="">全部城市</option>' +
-    cities.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    cities.map(c => `<option value="${escAttr(c)}">${esc(c)}</option>`).join('');
   sel.value = cities.includes(prev) ? prev : '';
 }
 
 function onProvinceChange() {
   refreshCityOptions();
-  renderTable();
+  renderAll();
 }
 
-function renderStats() {
-  const mine = orders;
+/* 所有筛选入口都走这里：看板、趋势图、分析卡、表格用的是同一份筛选结果。
+   以前只有表格跟着筛选走，卡片和图表永远显示全量，筛完对不上号。 */
+function renderAll() {
+  const view = getFilteredOrders();
+  renderScope(view);
+  renderStats(view);
+  renderTrend();
+  renderAnalysis();
+  renderTable(view);
+  renderTruncBanner();
+}
+
+// 写清楚当前这批数字是什么口径的，不然筛完不知道看的是哪一撮
+function renderScope(view) {
+  const el = document.getElementById('scopeLine');
+  if (!el) return;
+  const parts = [];
+  const month = document.getElementById('filterMonth');
+  const province = document.getElementById('filterProvince').value;
+  const city = document.getElementById('filterCity').value;
+  const carrier = document.getElementById('filterCarrier').value;
+  if (month.value) parts.push(month.options[month.selectedIndex].text);
+  if (province) parts.push(province);
+  if (city) parts.push(city);
+  if (carrier) parts.push(carrier);
+  const statusText = { unpaid: '未结佣', paid: '已结佣', over30: '逾 30 天', over60: '逾 60 天' }[paybackFilter];
+  if (statusText) parts.push(statusText);
+  const q = document.getElementById('searchInput').value.trim();
+  if (q) parts.push('搜索「' + q + '」');
+
+  el.innerHTML = parts.length
+    ? '<b>当前口径</b>：' + parts.map(esc).join(' · ') + ' —— 以下卡片、图表与表格均只统计这 ' + view.length + ' 笔'
+    : '<b>当前口径</b>：全部 ' + view.length + ' 笔订单';
+}
+
+function renderStats(view) {
+  const mine = view || orders;
   const total = mine.length;
   const totalCommission = mine.reduce((s, o) => s + (Number(o.commission)||0), 0);
 
-  // 本月与上月：用于环比
+  // 本月与上月：用于环比。这两项按自然月取，不受月份筛选影响，
+  // 否则筛到 8 月时「本月订单」会变成 0，读起来是错的。
+  const byMonth = selectOrders('month');
   const now = new Date();
   const ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
   const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastYm = lastMonthDate.getFullYear() + '-' + String(lastMonthDate.getMonth()+1).padStart(2,'0');
 
-  const thisMonthOrders = mine.filter(o => o.applyDate && o.applyDate.startsWith(ym));
-  const lastMonthOrders = mine.filter(o => o.applyDate && o.applyDate.startsWith(lastYm));
+  const thisMonthOrders = byMonth.filter(o => o.applyDate && o.applyDate.startsWith(ym));
+  const lastMonthOrders = byMonth.filter(o => o.applyDate && o.applyDate.startsWith(lastYm));
   const monthNew = thisMonthOrders.length;
   const monthCommission = thisMonthOrders.reduce((s, o) => s + (Number(o.commission)||0), 0);
 
@@ -1088,27 +1220,13 @@ function renderStats() {
     deltaHtml = '<span class="delta delta-up">上月无订单</span>';
   }
 
-  // Unpaid count and amount
   const unpaid = mine.filter(o => !o.paybackDate);
   const unpaidCount = unpaid.length;
   const agings = unpaid.map(agingDays).filter(d => d !== null);
   const oldestAging = agings.length ? Math.max(...agings) : null;
 
-  // Carrier distribution
-  const carrierCounts = { '联通': 0, '移动': 0, '电信': 0 };
-  mine.forEach(o => { if (carrierCounts.hasOwnProperty(o.carrier)) carrierCounts[o.carrier]++; });
-  const carrierTotal = total || 1;
-  const carrierBars = [
-    ['联通', carrierCounts['联通'], 'bar-fill-unicom'],
-    ['移动', carrierCounts['移动'], 'bar-fill-mobile'],
-    ['电信', carrierCounts['电信'], 'bar-fill-telecom'],
-  ].map(([name, cnt, cls]) => {
-    const pct = Math.round(cnt / carrierTotal * 100);
-    return '<div class="carrier-bar-wrap">' +
-      '<span class="bar-label">' + name + '</span>' +
-      '<div class="bar-track"><div class="bar-fill ' + cls + '" style="width:' + pct + '%"></div></div>' +
-      '<span class="carrier-pct">' + pct + '%</span></div>';
-  }).join('');
+  // 结佣周期：CPS 模式下「钱多久到」比「做了多少单」更值得盯
+  const st = settleStats(mine);
 
   document.getElementById('stats').innerHTML = [
     {
@@ -1127,26 +1245,146 @@ function renderStats() {
       label: '未结佣',
       value: unpaidCount + ' 笔',
       cls: unpaidCount > 0 ? ' warn' : '',
-      extra: oldestAging !== null
-        ? '<div class="sub">最久 ' + oldestAging + ' 天</div>'
-        : '',
+      // 这张卡不放金额（此前明确要求去掉）；压着多少钱看下面的账龄分布卡
+      extra: oldestAging !== null ? '<div class="sub">最久 ' + oldestAging + ' 天</div>' : '',
       onclick: 'applyPaybackFilter(\'unpaid\')'
     },
-    { label: '运营商占比', custom: carrierBars },
+    {
+      label: '结佣周期（中位数）',
+      value: st ? st.median + ' 天' : '—',
+      extra: st
+        ? '<div class="sub">最快 ' + st.min + ' · 最慢 ' + st.max + ' 天（' + st.n + ' 笔已结佣）</div>'
+        : '<div class="sub">还没有已结佣的订单</div>',
+      onclick: st ? 'applyPaybackFilter(\'paid\')' : ''
+    }
   ].map(c => {
-    const body = c.custom
-      ? c.custom
-      : '<div class="value">' + c.value + '</div>' + (c.extra || '');
+    const body = '<div class="value">' + c.value + '</div>' + (c.extra || '');
     const clickable = c.onclick ? ' clickable" onclick="' + c.onclick + '" title="点击查看对应记录' : '';
     return '<div class="stat-card' + (c.cls || '') + clickable + '"><div class="label">' + c.label + '</div>' + body + '</div>';
   }).join('');
-
 }
 
 function carrierBadge(c) {
   if (c === '联通') return 'badge-unicom';
   if (c === '移动') return 'badge-mobile';
   return 'badge-telecom';
+}
+
+const CARRIER_COLOR = { '联通': 'var(--c-unicom)', '移动': 'var(--c-mobile)', '电信': 'var(--c-telecom)' };
+
+function money(n) { return '¥' + Number(n || 0).toLocaleString(); }
+
+/* ========== 分析区 ==========
+   三张卡都吃当前筛选；但按某维度拆分的卡不吃自己那一维的筛选
+   （否则只剩一行），改为把选中的那一项高亮。 */
+function renderAnalysis() {
+  document.getElementById('analysisGrid').innerHTML =
+    renderAgingCard() + renderCarrierCard() + renderRegionCard();
+}
+
+// P2 未结佣账龄分布：条长表示压着的佣金金额，点击套用对应筛选
+function renderAgingCard() {
+  const buckets = agingBuckets(selectOrders());
+  const totalCount = buckets.reduce((s, b) => s + b.count, 0);
+  const max = Math.max(...buckets.map(b => b.commission), 1);
+  const body = totalCount === 0
+    ? '<div class="an-empty">当前口径下没有未结佣订单</div>'
+    : buckets.map(b =>
+        '<div class="an-row clickable" onclick="applyPaybackFilter(\'' + b.filter + '\')" title="' + b.hint + '">' +
+          '<span class="an-label ' + b.cls + '">' + b.label + '</span>' +
+          '<div class="an-track"><div class="an-fill" style="width:' +
+            (b.commission / max * 100).toFixed(1) + '%;background:' + b.color + '"></div></div>' +
+          '<span class="an-val"><b>' + b.count + '</b> 笔 · ' + money(b.commission) + '</span>' +
+        '</div>').join('');
+  return '<div class="an-card"><h3>未结佣账龄</h3>' +
+    '<div class="an-hint">条长表示压着的佣金金额 · 点任意一档筛选对应订单</div>' + body + '</div>';
+}
+
+// P1+P3 运营商表现：不只看发单量，更要看谁赚得多、谁回款快
+function renderCarrierCard() {
+  const list = selectOrders('carrier');
+  const groups = groupBy(list, o => o.carrier);
+  const active = document.getElementById('filterCarrier').value;
+  const totalCommission = groups.reduce((s, g) => s + g.commission, 0) || 1;
+  groups.sort((a, b) => b.commission - a.commission);
+
+  const body = groups.length === 0
+    ? '<div class="an-empty">当前口径下暂无数据</div>'
+    : '<table class="an-table"><thead><tr>' +
+        '<th>运营商</th><th>佣金占比</th><th>笔数</th><th>单均佣金</th><th>结佣周期</th>' +
+      '</tr></thead><tbody>' +
+      groups.map(g => {
+        const pct = Math.round(g.commission / totalCommission * 100);
+        const color = CARRIER_COLOR[g.key] || 'var(--c-region)';
+        const on = active === g.key;
+        return '<tr class="clickable"' + (on ? ' style="background:#f1f5f9"' : '') +
+            ' onclick="setCarrierFilter(\'' + escAttr(g.key) + '\')"' +
+            ' title="点击只看' + escAttr(g.key) + '">' +
+          '<td><span class="an-swatch" style="background:' + color + '"></span>' + esc(g.key) + '</td>' +
+          '<td><div class="an-share"><div class="an-track"><div class="an-fill" style="width:' +
+            pct + '%;background:' + color + '"></div></div><span class="an-val">' + pct + '%</span></div></td>' +
+          '<td>' + g.count + '</td>' +
+          '<td>' + money(g.avgCommission) + '</td>' +
+          '<td>' + (g.settleMedian === null
+            ? '<span class="an-muted">—</span>'
+            : g.settleMedian + ' 天') + '</td>' +
+        '</tr>';
+      }).join('') + '</tbody></table>';
+
+  return '<div class="an-card"><h3>运营商表现</h3>' +
+    '<div class="an-hint">单均佣金决定把客资给谁，结佣周期决定钱多久到（中位数）</div>' + body + '</div>';
+}
+
+// P4 地区 Top5：没选省份时看省，选了省自动下钻到城市
+function renderRegionCard() {
+  const province = document.getElementById('filterProvince').value;
+  const list = selectOrders('region');
+  const drill = !!province;
+  const groups = groupBy(list.filter(o => !drill || o.province === province),
+                         o => drill ? o.city : o.province);
+  groups.sort((a, b) => b.commission - a.commission);
+  const top = groups.slice(0, 5);
+  const max = Math.max(...top.map(g => g.commission), 1);
+  const activeCity = document.getElementById('filterCity').value;
+
+  const body = top.length === 0
+    ? '<div class="an-empty">当前口径下暂无地区数据</div>'
+    : top.map(g => {
+        const on = drill ? activeCity === g.key : false;
+        return '<div class="an-row clickable"' + (on ? ' style="background:#f1f5f9"' : '') +
+            ' onclick="setRegionFilter(' + (drill ? 'null' : '\'' + escAttr(g.key) + '\'') +
+            ', ' + (drill ? '\'' + escAttr(g.key) + '\'' : 'null') + ')"' +
+            ' title="点击只看' + escAttr(g.key) + '">' +
+          '<span class="an-label">' + esc(g.key) + '</span>' +
+          '<div class="an-track"><div class="an-fill" style="width:' +
+            (g.commission / max * 100).toFixed(1) + '%;background:var(--c-region)"></div></div>' +
+          '<span class="an-val"><b>' + money(g.commission) + '</b> · ' + g.count + ' 笔</span>' +
+        '</div>';
+      }).join('');
+
+  const scope = drill ? esc(province) + ' 各城市' : '各省份';
+  const more = groups.length > 5 ? '（共 ' + groups.length + ' 个，只显示前 5）' : '';
+  return '<div class="an-card"><h3>地区 Top 5</h3>' +
+    '<div class="an-hint">' + scope + ' · 按佣金排序' + more + '</div>' + body + '</div>';
+}
+
+// 从分析卡点选运营商：再点一次同一个取消，和胶囊的手感一致
+function setCarrierFilter(name) {
+  const sel = document.getElementById('filterCarrier');
+  sel.value = sel.value === name ? '' : name;
+  renderAll();
+}
+
+function setRegionFilter(province, city) {
+  const pSel = document.getElementById('filterProvince');
+  const cSel = document.getElementById('filterCity');
+  if (province !== null) {
+    pSel.value = pSel.value === province ? '' : province;
+    refreshCityOptions();
+  } else if (city !== null) {
+    cSel.value = cSel.value === city ? '' : city;
+  }
+  renderAll();
 }
 
 function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -1179,6 +1417,72 @@ function agingLevel(days) {
   return 'age-ok';
 }
 
+/* ========== 结佣周期 ==========
+   CPS 模式下真正要回答的是「钱多久到」：办理日期 → 结佣日期的天数。
+   只有已结佣的订单才有这个值。 */
+function settleDays(o) {
+  if (!o.paybackDate) return null;
+  const a = parseYmd(o.applyDate), b = parseYmd(o.paybackDate);
+  if (!a || !b) return null;
+  const days = Math.round((b - a) / 86400000);
+  return days >= 0 ? days : null;
+}
+
+// 用中位数而不是平均：样本少的时候一笔拖很久的单会把平均值整个带偏
+function median(nums) {
+  if (!nums.length) return null;
+  const s = [...nums].sort((x, y) => x - y);
+  const mid = s.length >> 1;
+  return s.length % 2 ? s[mid] : Math.round((s[mid - 1] + s[mid]) / 2);
+}
+
+function settleStats(list) {
+  const days = list.map(settleDays).filter(d => d !== null);
+  if (!days.length) return null;
+  return { median: median(days), min: Math.min(...days), max: Math.max(...days), n: days.length };
+}
+
+// 未结佣按账龄分三档，与表格里的颜色分级、以及逾30/逾60筛选保持同一套口径
+// 颜色用状态色（未到点=中性灰，逾期=警示，久欠=严重），并且每档都带文字标签，
+// 不靠颜色单独承载含义。筛选口径按现有胶囊来，hint 里写清楚点下去会得到什么。
+const AGE_BUCKETS = [
+  { key: 'fresh', label: '30 天内',  cls: 'age-ok',   color: '#9ca3af', filter: 'unpaid', hint: '点击筛选：全部未结佣', test: d => d < 30 },
+  { key: 'warn',  label: '30–60 天', cls: 'age-warn', color: '#fab219', filter: 'over30', hint: '点击筛选：逾 30 天及以上', test: d => d >= 30 && d < 60 },
+  { key: 'bad',   label: '60 天以上', cls: 'age-bad',  color: '#d03b3b', filter: 'over60', hint: '点击筛选：逾 60 天及以上', test: d => d >= 60 }
+];
+
+function agingBuckets(list) {
+  const unpaid = list.filter(o => !o.paybackDate);
+  return AGE_BUCKETS.map(b => {
+    const hit = unpaid.filter(o => { const d = agingDays(o); return d !== null && b.test(d); });
+    return {
+      ...b,
+      count: hit.length,
+      commission: hit.reduce((s, o) => s + (Number(o.commission) || 0), 0)
+    };
+  });
+}
+
+// 按任意字段聚合：笔数、佣金、单均佣金、结佣周期中位数
+function groupBy(list, keyOf) {
+  const map = new Map();
+  list.forEach(o => {
+    const k = keyOf(o);
+    if (!k) return;
+    if (!map.has(k)) map.set(k, []);
+    map.get(k).push(o);
+  });
+  return Array.from(map, ([key, items]) => {
+    const commission = items.reduce((s, o) => s + (Number(o.commission) || 0), 0);
+    const st = settleStats(items);
+    return {
+      key, count: items.length, commission,
+      avgCommission: Math.round(commission / items.length),
+      settleMedian: st ? st.median : null
+    };
+  });
+}
+
 // 与 CSS 里的手机端断点保持一致
 function isNarrow() { return window.matchMedia('(max-width:768px)').matches; }
 
@@ -1193,14 +1497,16 @@ function setSelectValue(sel, value) {
   sel.value = v;
 }
 
-function getFilteredOrders() {
+/* 按维度取数。except 用来排除某一个维度自身的筛选：
+   按月份拆的趋势图若吃掉月份筛选，就只剩一根柱子；运营商图、地区图同理。
+   这些图改为「不吃自己那一维，但高亮选中项」，其余维度照常生效。 */
+function selectOrders(except) {
   const q = document.getElementById('searchInput').value.toLowerCase();
-  const carrierFilter = document.getElementById('filterCarrier').value;
-  const provinceFilter = document.getElementById('filterProvince').value;
-  const cityFilter = document.getElementById('filterCity').value;
-  const monthFilter = document.getElementById('filterMonth').value;
-  const sortVal = document.getElementById('sortBy').value;
-  let filtered = orders.filter(o => {
+  const carrierFilter = except === 'carrier' ? '' : document.getElementById('filterCarrier').value;
+  const provinceFilter = except === 'region' ? '' : document.getElementById('filterProvince').value;
+  const cityFilter = except === 'region' ? '' : document.getElementById('filterCity').value;
+  const monthFilter = except === 'month' ? '' : document.getElementById('filterMonth').value;
+  return orders.filter(o => {
     if (q && !((o.name||'').toLowerCase().includes(q) || (o.phone||'').includes(q) ||
                (o.city||'').toLowerCase().includes(q) || (o.package||'').toLowerCase().includes(q) ||
                (o.province||'').toLowerCase().includes(q) || (o.carrier||'').toLowerCase().includes(q))) return false;
@@ -1214,6 +1520,11 @@ function getFilteredOrders() {
     if (paybackFilter === 'over60' && !(agingDays(o) >= 60)) return false;
     return true;
   });
+}
+
+function getFilteredOrders() {
+  const sortVal = document.getElementById('sortBy').value;
+  const filtered = selectOrders();
 
   const [key, dir] = sortVal.split('_');
   filtered.sort((a, b) => {
@@ -1239,8 +1550,8 @@ function paybackCell(o) {
   return '<span class="' + agingLevel(days) + '">未结佣 ' + days + '天</span>';
 }
 
-function renderTable() {
-  const filtered = getFilteredOrders();
+function renderTable(view) {
+  const filtered = view || getFilteredOrders();
   const tbody = document.getElementById('tableBody');
   document.getElementById('emptyMsg').style.display = filtered.length ? 'none' : 'block';
 
@@ -1318,6 +1629,25 @@ function hideOfflineBanner() {
   if (el) el.classList.remove('visible');
 }
 
+// 被截断时所有统计都是不完整的，不说清楚会让人按错的数字做判断
+function renderTruncBanner() {
+  const el = document.getElementById('truncBanner');
+  if (!el) return;
+  if (truncatedTotal) {
+    el.innerHTML = '⚠️ <b>数据未取全</b>：数据库共 ' + truncatedTotal + ' 条，本次只取回 ' +
+      allOrders.length + ' 条（接口单次返回条数有上限）。<b>当前所有统计、图表和合计都是不完整的。</b>' +
+      '<br>请到 Supabase → Settings → API 调高 Max rows，或改为分页加载。';
+  } else if (countUnverified) {
+    el.innerHTML = '⚠️ <b>无法确认数据是否取全</b>：已取回 ' + allOrders.length +
+      ' 条，但没读到服务端返回的总数，无法比对。<br>' +
+      '请在 Supabase → Settings → API 确认 Max rows 高于实际订单数。';
+  } else {
+    el.classList.remove('visible');
+    return;
+  }
+  el.classList.add('visible');
+}
+
 // 网络恢复后自动重新拉取
 window.addEventListener('online', () => { if (usingCachedData) loadData(); });
 
@@ -1339,13 +1669,13 @@ function togglePaybackFilter(val) {
   } else {
     paybackFilter = val;
   }
-  renderTable();
+  renderAll();
 }
 
 // 看板卡片用：直接套用，不做反选
 function applyPaybackFilter(val) {
   paybackFilter = val;
-  renderTable();
+  renderAll();
 }
 
 function setMonthFilter(val) {
@@ -1353,7 +1683,7 @@ function setMonthFilter(val) {
   if (!sel) return;
   sel.value = val;
   if (sel.value !== val) sel.value = '';   // 该月不在选项里（无数据）时退回全部
-  renderTable();
+  renderAll();
 }
 
 function renderPaybackChips() {
@@ -1383,7 +1713,7 @@ function clearAllFilters() {
   FILTER_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   paybackFilter = '';
   refreshCityOptions();
-  renderTable();
+  renderAll();
 }
 
 function openModal(idx) {
@@ -1767,36 +2097,50 @@ function showRowDetail(idx) {
 function renderTrend() {
   const wrap = document.getElementById('trendWrap');
   if (!wrap) return;
-  const mine = orders;
+  // 按月拆的图不吃月份筛选，否则只剩一根柱子；选中的那个月改为高亮。
+  const mine = selectOrders('month');
+  const picked = document.getElementById('filterMonth').value;
 
-  // 最近 12 个自然月（含当月）
+  // 选了某一年就看那一年的 12 个月，否则看最近 12 个自然月
   const now = new Date();
+  const pickedYear = /^\d{4}$/.test(picked) ? +picked
+                   : (/^\d{4}-\d{2}$/.test(picked) ? +picked.slice(0, 4) : null);
   const buckets = [];
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  for (let i = 0; i < 12; i++) {
+    const d = pickedYear !== null
+      ? new Date(pickedYear, i, 1)
+      : new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
     const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-    buckets.push({ key, label: (d.getMonth() + 1) + '月', commission: 0, count: 0 });
+    buckets.push({ key, label: (d.getMonth() + 1) + '月', settled: 0, unsettled: 0, count: 0 });
   }
   const index = new Map(buckets.map(b => [b.key, b]));
   mine.forEach(o => {
     if (!o.applyDate) return;
     const b = index.get(String(o.applyDate).slice(0, 7));
-    if (b) { b.commission += Number(o.commission) || 0; b.count++; }
+    if (!b) return;
+    const v = trendMetric === 'count' ? 1 : (Number(o.commission) || 0);
+    if (o.paybackDate) b.settled += v; else b.unsettled += v;
+    b.count++;
   });
 
   const isCount = trendMetric === 'count';
-  const valueOf = b => isCount ? b.count : b.commission;
-  const currentKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  const title = isCount ? '近 12 个月订单量趋势' : '近 12 个月佣金趋势';
+  const totalOf = b => b.settled + b.unsettled;
+  const rangeLabel = pickedYear !== null ? (pickedYear + ' 年') : '近 12 个月';
+  const title = rangeLabel + (isCount ? '订单量趋势' : '佣金趋势');
   const toggle = '<span class="trend-toggle">' +
     '<button class="' + (isCount ? '' : 'active') + '" onclick="setTrendMetric(\'commission\')">佣金</button>' +
     '<button class="' + (isCount ? 'active' : '') + '" onclick="setTrendMetric(\'count\')">订单数</button>' +
     '</span>';
+  // 两个系列必须有图例，识别不能只靠颜色
+  const legend = '<div class="an-legend" style="margin:2px 0 8px">' +
+    '<span><i style="background:var(--c-settled)"></i>已结佣</span>' +
+    '<span><i style="background:var(--c-unsettled)"></i>未结佣</span>' +
+    '<span class="an-muted">堆叠高度为当月合计</span></div>';
 
-  const max = Math.max(...buckets.map(valueOf));
+  const max = Math.max(...buckets.map(totalOf));
   if (max <= 0) {
     wrap.innerHTML = '<div class="trend-card"><h3>' + title + toggle + '</h3>' +
-      '<div class="trend-empty">最近 12 个月暂无订单数据</div></div>';
+      '<div class="trend-empty">' + rangeLabel + '暂无订单数据</div></div>';
     return;
   }
 
@@ -1804,41 +2148,70 @@ function renderTrend() {
   // 用户单位放大一档，否则月份标签会糊成一片或与柱子重叠。
   const narrow = window.innerWidth <= 768;
   const W = 1000;
-  const H = narrow ? 170 : 110;
+  const H = narrow ? 170 : 116;
   const padBottom = narrow ? 46 : 18;
-  const padTop = narrow ? 18 : 14;
+  const padTop = narrow ? 18 : 16;
   const labelSize = narrow ? 26 : 10;
   const slot = W / buckets.length;
-  const barW = slot * 0.56;
+  // 柱子封顶，别把格子填满，余下的留白。宽屏 SVG 会被放大约 1.4 倍，
+  // 16 用户单位落到屏幕上约 22–25px，正好在「柱宽不超过 24px」这条线附近；
+  // 窄屏整体缩小，按槽宽比例走反而更合适。
+  const barW = narrow ? slot * 0.56 : Math.min(slot * 0.56, 16);
+  const plot = H - padTop - padBottom;
+  const GAP = 2;   // 堆叠两段之间留表面色间隙，靠留白分隔而不是描边
+
   const bars = buckets.map((b, i) => {
-    const v = valueOf(b);
-    const h = v > 0 ? Math.max(2, (v / max) * (H - padTop - padBottom)) : 0;
+    const total = totalOf(b);
     const x = i * slot + (slot - barW) / 2;
-    const y = H - padBottom - h;
-    const isCurrent = b.key === currentKey;
-    // 窄屏放不下数值标注，只留月份
-    const shown = isCount ? v : (v >= 10000 ? (v / 10000).toFixed(1) + '万' : v);
-    const valueLabel = (v > 0 && !narrow)
-      ? '<text class="trend-value" x="' + (x + barW / 2) + '" y="' + (y - 4) + '" text-anchor="middle">' +
-        shown + '</text>'
+    const isPicked = b.key === picked;
+    const isCurrent = !picked && b.key === (now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'));
+    const hTotal = total > 0 ? Math.max(2, total / max * plot) : 0;
+    const hUnsettled = total > 0 ? (b.unsettled / total) * hTotal : 0;
+    const hSettled = hTotal - hUnsettled;
+    const yTop = H - padBottom - hTotal;
+
+    // 未结佣在上、已结佣在下：下段贴基线，圆角只给整根柱子的顶端
+    let seg = '';
+    if (hSettled > 0) {
+      seg += '<rect x="' + x.toFixed(1) + '" y="' + (H - padBottom - hSettled).toFixed(1) +
+        '" width="' + barW.toFixed(1) + '" height="' + hSettled.toFixed(1) +
+        '" fill="var(--c-settled)"' + (hUnsettled > 0 ? '' : ' rx="4"') + '/>';
+    }
+    if (hUnsettled > 0) {
+      const h = Math.max(1, hUnsettled - (hSettled > 0 ? GAP : 0));
+      seg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) +
+        '" width="' + barW.toFixed(1) + '" height="' + h.toFixed(1) +
+        '" fill="var(--c-unsettled)" rx="4"/>';
+    }
+
+    const fmt = v => isCount ? v : (v >= 10000 ? (v / 10000).toFixed(1) + '万' : v);
+    // 只给选中月/当月标数值，不是每根都标——标满了没人看
+    const valueLabel = (total > 0 && !narrow && (isPicked || isCurrent))
+      ? '<text class="trend-value" x="' + (x + barW / 2) + '" y="' + (yTop - 5) + '" text-anchor="middle">' +
+        fmt(total) + '</text>'
       : '';
-    return '<g>' +
-      '<rect class="trend-bar' + (isCurrent ? ' current' : '') + '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) +
-        '" width="' + barW.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="3">' +
-        '<title>' + b.key + '：' + b.count + ' 笔 / ¥' + b.commission.toLocaleString() + '</title></rect>' +
-      valueLabel +
+    const tip = b.key + '：' + b.count + ' 笔\n已结佣 ' + (isCount ? b.settled + ' 笔' : money(b.settled)) +
+                ' · 未结佣 ' + (isCount ? b.unsettled + ' 笔' : money(b.unsettled));
+    return '<g class="trend-bar-g' + (isPicked || isCurrent ? ' current' : '') + '">' +
+      // 透明热区：命中面积比柱子宽，窄柱子也好点
+      '<rect x="' + (i * slot).toFixed(1) + '" y="' + padTop + '" width="' + slot.toFixed(1) +
+        '" height="' + (plot + padBottom) + '" fill="transparent"><title>' + tip + '</title></rect>' +
+      seg + valueLabel +
       '<text class="trend-label" x="' + (x + barW / 2) + '" y="' + (H - padBottom + labelSize + 4) +
         '" style="font-size:' + labelSize + 'px" text-anchor="middle">' + b.label + '</text>' +
       '</g>';
   }).join('');
 
-  const sum = buckets.reduce((s, b) => s + valueOf(b), 0);
-  const fmtVal = n => isCount ? (n + ' 笔') : ('¥' + n.toLocaleString());
+  const sumSettled = buckets.reduce((s, b) => s + b.settled, 0);
+  const sumUnsettled = buckets.reduce((s, b) => s + b.unsettled, 0);
+  const fmtVal = n => isCount ? (n + ' 笔') : money(n);
   wrap.innerHTML = '<div class="trend-card">' +
     '<h3>' + title +
-      '<span class="hint">合计 ' + fmtVal(sum) + ' · 峰值 ' + fmtVal(max) + '</span>' + toggle + '</h3>' +
+      '<span class="hint">合计 ' + fmtVal(sumSettled + sumUnsettled) +
+      ' · 其中未结佣 ' + fmtVal(sumUnsettled) + '</span>' + toggle + '</h3>' + legend +
     '<svg class="trend-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + title + '">' +
-    '<line x1="0" y1="' + (H - padBottom) + '" x2="' + W + '" y2="' + (H - padBottom) + '" stroke="#e5e7eb" stroke-width="1"/>' +
+    '<line x1="0" y1="' + (H - padBottom) + '" x2="' + W + '" y2="' + (H - padBottom) +
+      '" stroke="var(--grid-line)" stroke-width="1"/>' +
     bars + '</svg></div>';
 }
 
@@ -1853,7 +2226,7 @@ function setTrendMetric(metric) {
 let layoutResizeTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(layoutResizeTimer);
-  layoutResizeTimer = setTimeout(() => { renderTrend(); renderTable(); }, 200);
+  layoutResizeTimer = setTimeout(() => { renderAll(); }, 200);
 });
 
 /* ========== 把历史订单改到自己名下 ========== */
