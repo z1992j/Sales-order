@@ -232,7 +232,7 @@
   .trend-bar-g.current rect{stroke:rgba(30,64,175,.35);stroke-width:1}
   .trend-bar-g.current rect[fill="transparent"]{stroke:none}
 
-  /* --- 分析区：账龄分布 / 运营商表现 / 地区 Top5 ---
+  /* --- 分析区：热销组合 / 城市 Top5 / 运营商表现 ---
      配色取自经 validate_palette.js 校验的分类槽（原来的移动绿 vs 电信黄
      在色盲模拟下 ΔE 仅 4.2，几乎分不开）。三色槽 all-pairs 全项通过。
      青色对白底对比度 2.82:1，靠每根条自带的文字标签补足，不单靠颜色识别。 */
@@ -1282,8 +1282,9 @@ function money(n) { return '¥' + Number(n || 0).toLocaleString(); }
    三张卡都吃当前筛选；但按某维度拆分的卡不吃自己那一维的筛选
    （否则只剩一行），改为把选中的那一项高亮。 */
 function renderAnalysis() {
+  // 左：卖什么最好卖 · 中：在哪卖得最多 · 右：跟谁家合作更划算
   document.getElementById('analysisGrid').innerHTML =
-    renderComboCard() + renderCarrierCard() + renderRegionCard();
+    renderComboCard() + renderCityCard() + renderCarrierCard();
 }
 
 /* 热销组合：城市 × 运营商 × 套餐 一起看，回答「在哪、用谁家、卖哪档最好卖」。
@@ -1400,37 +1401,48 @@ function renderCarrierCard() {
     '<div class="an-hint">单均佣金决定把客资给谁，结佣周期决定钱多久到（中位数）</div>' + body + '</div>';
 }
 
-// P4 地区 Top5：没选省份时看省，选了省自动下钻到城市
-function renderRegionCard() {
-  const province = document.getElementById('filterProvince').value;
-  const list = selectOrders('region');
-  const drill = !!province;
-  const groups = groupBy(list.filter(o => !drill || o.province === province),
-                         o => drill ? o.city : o.province);
-  groups.sort((a, b) => b.commission - a.commission);
+/* 城市 Top5：一律按城市看，不再按省份聚合。
+   省份在筛选行里仍可单独筛，这张卡只回答「哪个城市最出货」。
+   带上省份是因为城市下拉的选项跟着省份走，点选时要先把省份设对。 */
+function cityGroups(list) {
+  const map = new Map();
+  list.forEach(o => {
+    const city = (o.city || '').trim();
+    if (!city) return;
+    if (!map.has(city)) {
+      map.set(city, { city, province: (o.province || '').trim(), count: 0, commission: 0 });
+    }
+    const g = map.get(city);
+    g.count++;
+    g.commission += Number(o.commission) || 0;
+  });
+  return Array.from(map.values())
+    .sort((a, b) => b.commission - a.commission || b.count - a.count);
+}
+
+function renderCityCard() {
+  const groups = cityGroups(selectOrders('region'));
   const top = groups.slice(0, 5);
   const max = Math.max(...top.map(g => g.commission), 1);
   const activeCity = document.getElementById('filterCity').value;
 
   const body = top.length === 0
-    ? '<div class="an-empty">当前口径下暂无地区数据</div>'
+    ? '<div class="an-empty">当前口径下暂无城市数据</div>'
     : top.map(g => {
-        const on = drill ? activeCity === g.key : false;
+        const on = activeCity === g.city;
         return '<div class="an-row clickable"' + (on ? ' style="background:#f1f5f9"' : '') +
-            ' onclick="setRegionFilter(' + (drill ? 'null' : '\'' + escAttr(g.key) + '\'') +
-            ', ' + (drill ? '\'' + escAttr(g.key) + '\'' : 'null') + ')"' +
-            ' title="点击只看' + escAttr(g.key) + '">' +
-          '<span class="an-label">' + esc(g.key) + '</span>' +
+            ' onclick="setCityFilter(\'' + escAttr(g.province) + '\',\'' + escAttr(g.city) + '\')"' +
+            ' title="点击只看' + escAttr(g.city) + '，再点一次取消">' +
+          '<span class="an-label">' + esc(g.city) + '</span>' +
           '<div class="an-track"><div class="an-fill" style="width:' +
             (g.commission / max * 100).toFixed(1) + '%;background:var(--c-bar)"></div></div>' +
           '<span class="an-val"><b>' + money(g.commission) + '</b> · ' + g.count + ' 笔</span>' +
         '</div>';
       }).join('');
 
-  const scope = drill ? esc(province) + ' 各城市' : '各省份';
-  const more = groups.length > 5 ? '（共 ' + groups.length + ' 个，只显示前 5）' : '';
-  return '<div class="an-card"><h3>地区 Top 5</h3>' +
-    '<div class="an-hint">' + scope + ' · 按佣金排序' + more + '</div>' + body + '</div>';
+  const more = groups.length > 5 ? '（共 ' + groups.length + ' 个城市，只显示前 5）' : '';
+  return '<div class="an-card"><h3>城市 Top 5</h3>' +
+    '<div class="an-hint">按佣金排序' + more + '</div>' + body + '</div>';
 }
 
 // 从分析卡点选运营商：再点一次同一个取消，和胶囊的手感一致
@@ -1440,14 +1452,18 @@ function setCarrierFilter(name) {
   renderAll();
 }
 
-function setRegionFilter(province, city) {
+// 设城市前先设省份：城市下拉的选项跟着省份走，顺序反了会被静默置空
+function setCityFilter(province, city) {
   const pSel = document.getElementById('filterProvince');
   const cSel = document.getElementById('filterCity');
-  if (province !== null) {
-    pSel.value = pSel.value === province ? '' : province;
+  if (cSel.value === city) {
+    pSel.value = '';
+    cSel.value = '';
     refreshCityOptions();
-  } else if (city !== null) {
-    cSel.value = cSel.value === city ? '' : city;
+  } else {
+    if (province) pSel.value = province;
+    refreshCityOptions();
+    setSelectValue(cSel, city);
   }
   renderAll();
 }
