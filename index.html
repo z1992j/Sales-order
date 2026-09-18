@@ -242,7 +242,7 @@
     --c-telecom:#1baf7a;  /* 电信 */
     --c-settled:#2a78d6;  /* 已结佣 */
     --c-unsettled:#e0952a;/* 未结佣 */
-    --c-region:#2a78d6;   /* 地区条：单一色相，不按大小变深，避免把长度重复编码成颜色 */
+    --c-bar:#2a78d6;      /* 单系列条形：同一色相，不按大小变深，避免把长度重复编码成颜色 */
     --grid-line:#e5e7eb;
     --ink-2:#6b7280;
     --ink-3:#9ca3af;
@@ -1279,25 +1279,59 @@ function money(n) { return '¥' + Number(n || 0).toLocaleString(); }
    （否则只剩一行），改为把选中的那一项高亮。 */
 function renderAnalysis() {
   document.getElementById('analysisGrid').innerHTML =
-    renderAgingCard() + renderCarrierCard() + renderRegionCard();
+    renderPackageCard() + renderCarrierCard() + renderRegionCard();
 }
 
-// P2 未结佣账龄分布：条长表示压着的佣金金额，点击套用对应筛选
-function renderAgingCard() {
-  const buckets = agingBuckets(selectOrders());
-  const totalCount = buckets.reduce((s, b) => s + b.count, 0);
-  const max = Math.max(...buckets.map(b => b.commission), 1);
-  const body = totalCount === 0
-    ? '<div class="an-empty">当前口径下没有未结佣订单</div>'
-    : buckets.map(b =>
-        '<div class="an-row clickable" onclick="applyPaybackFilter(\'' + b.filter + '\')" title="' + b.hint + '">' +
-          '<span class="an-label ' + b.cls + '">' + b.label + '</span>' +
-          '<div class="an-track"><div class="an-fill" style="width:' +
-            (b.commission / max * 100).toFixed(1) + '%;background:' + b.color + '"></div></div>' +
-          '<span class="an-val"><b>' + b.count + '</b> 笔 · ' + money(b.commission) + '</span>' +
-        '</div>').join('');
-  return '<div class="an-card"><h3>未结佣账龄</h3>' +
-    '<div class="an-hint">条长表示压着的佣金金额 · 点任意一档筛选对应订单</div>' + body + '</div>';
+/* 热销套餐：哪个带宽卖得动、在哪个城市卖得动。
+   「热销」看的是笔数不是佣金，所以条长用笔数；佣金另列出来，
+   两者不一致时（卖得多但单均低）一眼能看出来。
+   套餐写法大小写不一（300m / 300M），统一成大写再聚合，否则会拆成两行。 */
+function renderPackageCard() {
+  const list = selectOrders();
+  const groups = groupBy(list, o => (o.package || '').trim().toUpperCase());
+  groups.sort((a, b) => b.count - a.count || b.commission - a.commission);
+  const top = groups.slice(0, 6);
+  const max = Math.max(...top.map(g => g.count), 1);
+
+  // 每个套餐最常卖的城市，作为「在哪卖得动」的落点
+  const topCityOf = pkg => {
+    const cities = groupBy(list.filter(o => (o.package || '').trim().toUpperCase() === pkg), o => o.city);
+    if (!cities.length) return null;
+    // 笔数相同时按佣金高的排前，避免并列时顺序随数据顺序漂移
+    cities.sort((a, b) => b.count - a.count || b.commission - a.commission);
+    return cities[0];
+  };
+
+  const body = top.length === 0
+    ? '<div class="an-empty">当前口径下暂无套餐数据</div>'
+    : '<table class="an-table"><thead><tr>' +
+        '<th>套餐</th><th>笔数</th><th>佣金</th><th>主要城市</th>' +
+      '</tr></thead><tbody>' +
+      top.map(g => {
+        const city = topCityOf(g.key);
+        return '<tr class="clickable" onclick="setPackageFilter(\'' + escAttr(g.key) + '\')"' +
+            ' title="点击只看 ' + escAttr(g.key) + ' 的订单">' +
+          '<td>' + esc(g.key) + '</td>' +
+          '<td><div class="an-share"><div class="an-track"><div class="an-fill" style="width:' +
+            (g.count / max * 100).toFixed(1) + '%;background:var(--c-bar)"></div></div>' +
+            '<span class="an-val">' + g.count + '</span></div></td>' +
+          '<td>' + money(g.commission) + '</td>' +
+          '<td>' + (city
+            ? esc(city.key) + ' <span class="an-muted">' + city.count + ' 笔</span>'
+            : '<span class="an-muted">—</span>') + '</td>' +
+        '</tr>';
+      }).join('') + '</tbody></table>';
+
+  const more = groups.length > 6 ? '（共 ' + groups.length + ' 种，只显示前 6）' : '';
+  return '<div class="an-card"><h3>热销套餐</h3>' +
+    '<div class="an-hint">按笔数排序' + more + ' · 点一行只看该套餐</div>' + body + '</div>';
+}
+
+// 没有独立的套餐筛选控件，借搜索框实现：搜索本来就覆盖套餐字段
+function setPackageFilter(pkg) {
+  const box = document.getElementById('searchInput');
+  box.value = box.value.trim().toUpperCase() === pkg ? '' : pkg;
+  renderAll();
 }
 
 // P1+P3 运营商表现：不只看发单量，更要看谁赚得多、谁回款快
@@ -1315,7 +1349,7 @@ function renderCarrierCard() {
       '</tr></thead><tbody>' +
       groups.map(g => {
         const pct = Math.round(g.commission / totalCommission * 100);
-        const color = CARRIER_COLOR[g.key] || 'var(--c-region)';
+        const color = CARRIER_COLOR[g.key] || 'var(--c-bar)';
         const on = active === g.key;
         return '<tr class="clickable"' + (on ? ' style="background:#f1f5f9"' : '') +
             ' onclick="setCarrierFilter(\'' + escAttr(g.key) + '\')"' +
@@ -1357,7 +1391,7 @@ function renderRegionCard() {
             ' title="点击只看' + escAttr(g.key) + '">' +
           '<span class="an-label">' + esc(g.key) + '</span>' +
           '<div class="an-track"><div class="an-fill" style="width:' +
-            (g.commission / max * 100).toFixed(1) + '%;background:var(--c-region)"></div></div>' +
+            (g.commission / max * 100).toFixed(1) + '%;background:var(--c-bar)"></div></div>' +
           '<span class="an-val"><b>' + money(g.commission) + '</b> · ' + g.count + ' 笔</span>' +
         '</div>';
       }).join('');
@@ -1440,27 +1474,6 @@ function settleStats(list) {
   const days = list.map(settleDays).filter(d => d !== null);
   if (!days.length) return null;
   return { median: median(days), min: Math.min(...days), max: Math.max(...days), n: days.length };
-}
-
-// 未结佣按账龄分三档，与表格里的颜色分级、以及逾30/逾60筛选保持同一套口径
-// 颜色用状态色（未到点=中性灰，逾期=警示，久欠=严重），并且每档都带文字标签，
-// 不靠颜色单独承载含义。筛选口径按现有胶囊来，hint 里写清楚点下去会得到什么。
-const AGE_BUCKETS = [
-  { key: 'fresh', label: '30 天内',  cls: 'age-ok',   color: '#9ca3af', filter: 'unpaid', hint: '点击筛选：全部未结佣', test: d => d < 30 },
-  { key: 'warn',  label: '30–60 天', cls: 'age-warn', color: '#fab219', filter: 'over30', hint: '点击筛选：逾 30 天及以上', test: d => d >= 30 && d < 60 },
-  { key: 'bad',   label: '60 天以上', cls: 'age-bad',  color: '#d03b3b', filter: 'over60', hint: '点击筛选：逾 60 天及以上', test: d => d >= 60 }
-];
-
-function agingBuckets(list) {
-  const unpaid = list.filter(o => !o.paybackDate);
-  return AGE_BUCKETS.map(b => {
-    const hit = unpaid.filter(o => { const d = agingDays(o); return d !== null && b.test(d); });
-    return {
-      ...b,
-      count: hit.length,
-      commission: hit.reduce((s, o) => s + (Number(o.commission) || 0), 0)
-    };
-  });
 }
 
 // 按任意字段聚合：笔数、佣金、单均佣金、结佣周期中位数
