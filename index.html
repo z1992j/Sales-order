@@ -274,6 +274,10 @@
   .an-table td{padding:6px 0;border-top:1px solid #f3f4f6;text-align:right;
                font-variant-numeric:tabular-nums;color:#1f2937;white-space:nowrap}
   .an-table td:first-child,.an-table td:nth-child(2){text-align:left}
+  /* 组合标签「城市 · 运营商 · 套餐」比其他列长，放不下时截断成省略号，
+     全文在 title 里。max-width:0 配合表格 width:100% 才能让 td 收缩，
+     否则 nowrap 会把表格撑出卡片。 */
+  .an-table td.an-combo{max-width:0;overflow:hidden;text-overflow:ellipsis}
   .an-table tr.clickable{cursor:pointer}
   .an-table tr.clickable:hover td{background:#f8fafc}
   .an-swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:baseline}
@@ -1279,58 +1283,85 @@ function money(n) { return '¥' + Number(n || 0).toLocaleString(); }
    （否则只剩一行），改为把选中的那一项高亮。 */
 function renderAnalysis() {
   document.getElementById('analysisGrid').innerHTML =
-    renderPackageCard() + renderCarrierCard() + renderRegionCard();
+    renderComboCard() + renderCarrierCard() + renderRegionCard();
 }
 
-/* 热销套餐：哪个带宽卖得动、在哪个城市卖得动。
-   「热销」看的是笔数不是佣金，所以条长用笔数；佣金另列出来，
-   两者不一致时（卖得多但单均低）一眼能看出来。
-   套餐写法大小写不一（300m / 300M），统一成大写再聚合，否则会拆成两行。 */
-function renderPackageCard() {
-  const list = selectOrders();
-  const groups = groupBy(list, o => (o.package || '').trim().toUpperCase());
-  groups.sort((a, b) => b.count - a.count || b.commission - a.commission);
+/* 热销组合：城市 × 运营商 × 套餐 一起看，回答「在哪、用谁家、卖哪档最好卖」。
+   单看城市或单看套餐都答不了这个——旁边两张卡已经分别拆了运营商和地区，
+   这张卡的价值就在于三者绑在一起的那个具体组合。
+   「热销」看的是走量，所以排序和条长都用笔数，佣金另列；
+   套餐写法大小写不一（300m / 300M）先统一成大写，否则同一档会被拆成两行。 */
+function comboGroups(list) {
+  const map = new Map();
+  list.forEach(o => {
+    const city = (o.city || '').trim();
+    const carrier = (o.carrier || '').trim();
+    const pkg = (o.package || '').trim().toUpperCase();
+    if (!city && !carrier && !pkg) return;   // 三项全空的记录没什么可分析的
+    const key = [city || '未填', carrier || '未填', pkg || '未填'].join('');
+    if (!map.has(key)) {
+      map.set(key, { city, carrier, pkg, province: (o.province || '').trim(), count: 0, commission: 0 });
+    }
+    const g = map.get(key);
+    g.count++;
+    g.commission += Number(o.commission) || 0;
+  });
+  return Array.from(map.values())
+    // 笔数并列时按佣金高的排前，避免顺序随数据顺序漂移
+    .sort((a, b) => b.count - a.count || b.commission - a.commission);
+}
+
+function renderComboCard() {
+  const groups = comboGroups(selectOrders());
   const top = groups.slice(0, 6);
   const max = Math.max(...top.map(g => g.count), 1);
 
-  // 每个套餐最常卖的城市，作为「在哪卖得动」的落点
-  const topCityOf = pkg => {
-    const cities = groupBy(list.filter(o => (o.package || '').trim().toUpperCase() === pkg), o => o.city);
-    if (!cities.length) return null;
-    // 笔数相同时按佣金高的排前，避免并列时顺序随数据顺序漂移
-    cities.sort((a, b) => b.count - a.count || b.commission - a.commission);
-    return cities[0];
-  };
-
   const body = top.length === 0
-    ? '<div class="an-empty">当前口径下暂无套餐数据</div>'
+    ? '<div class="an-empty">当前口径下暂无可分析的组合</div>'
     : '<table class="an-table"><thead><tr>' +
-        '<th>套餐</th><th>笔数</th><th>佣金</th><th>主要城市</th>' +
+        '<th>城市 · 运营商 · 套餐</th><th>笔数</th><th>佣金</th>' +
       '</tr></thead><tbody>' +
       top.map(g => {
-        const city = topCityOf(g.key);
-        return '<tr class="clickable" onclick="setPackageFilter(\'' + escAttr(g.key) + '\')"' +
-            ' title="点击只看 ' + escAttr(g.key) + ' 的订单">' +
-          '<td>' + esc(g.key) + '</td>' +
+        const color = CARRIER_COLOR[g.carrier] || 'var(--c-bar)';
+        const label = (g.city || '未填') + ' · ' + (g.carrier || '未填') + ' · ' + (g.pkg || '未填');
+        return '<tr class="clickable" onclick="setComboFilter(' +
+            '\'' + escAttr(g.province) + '\',\'' + escAttr(g.city) + '\',' +
+            '\'' + escAttr(g.carrier) + '\',\'' + escAttr(g.pkg) + '\')"' +
+            ' title="点击只看「' + escAttr(label) + '」的订单，再点一次取消">' +
+          '<td class="an-combo"><span class="an-swatch" style="background:' + color + '"></span>' + esc(label) + '</td>' +
           '<td><div class="an-share"><div class="an-track"><div class="an-fill" style="width:' +
             (g.count / max * 100).toFixed(1) + '%;background:var(--c-bar)"></div></div>' +
             '<span class="an-val">' + g.count + '</span></div></td>' +
           '<td>' + money(g.commission) + '</td>' +
-          '<td>' + (city
-            ? esc(city.key) + ' <span class="an-muted">' + city.count + ' 笔</span>'
-            : '<span class="an-muted">—</span>') + '</td>' +
         '</tr>';
       }).join('') + '</tbody></table>';
 
-  const more = groups.length > 6 ? '（共 ' + groups.length + ' 种，只显示前 6）' : '';
-  return '<div class="an-card"><h3>热销套餐</h3>' +
-    '<div class="an-hint">按笔数排序' + more + ' · 点一行只看该套餐</div>' + body + '</div>';
+  const more = groups.length > 6 ? '（共 ' + groups.length + ' 种组合，只显示前 6）' : '';
+  return '<div class="an-card"><h3>热销组合</h3>' +
+    '<div class="an-hint">城市 × 运营商 × 套餐，按笔数排序' + more + '</div>' + body + '</div>';
 }
 
-// 没有独立的套餐筛选控件，借搜索框实现：搜索本来就覆盖套餐字段
-function setPackageFilter(pkg) {
+/* 一次落三个筛选条件。城市下拉的选项跟着省份走，所以要先把省份设好
+   再设城市，否则城市不在当前选项里会被静默置空。套餐没有独立控件，
+   借搜索框（搜索本就覆盖套餐字段）。再点同一行则整组取消。 */
+function setComboFilter(province, city, carrier, pkg) {
+  const pSel = document.getElementById('filterProvince');
+  const cSel = document.getElementById('filterCity');
+  const carSel = document.getElementById('filterCarrier');
   const box = document.getElementById('searchInput');
-  box.value = box.value.trim().toUpperCase() === pkg ? '' : pkg;
+
+  const already = cSel.value === city && carSel.value === carrier &&
+                  box.value.trim().toUpperCase() === pkg;
+  if (already) {
+    pSel.value = ''; cSel.value = ''; carSel.value = ''; box.value = '';
+    refreshCityOptions();
+  } else {
+    if (province) pSel.value = province;
+    refreshCityOptions();
+    if (city) setSelectValue(cSel, city);
+    carSel.value = carrier || '';
+    box.value = pkg || '';
+  }
   renderAll();
 }
 
