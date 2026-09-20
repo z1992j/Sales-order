@@ -66,7 +66,6 @@
   .badge-telecom{background:#dcf3ea;color:#157954}
   .empty{text-align:center;padding:48px 16px;color:#9ca3af}
   .text-right{text-align:right}
-  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
   .col-name{font-weight:600;color:#111827}
   .col-commission{color:#16a34a;font-weight:600}
   /* 未结佣账龄：30 天内、30–59 天、60 天以上 */
@@ -98,26 +97,12 @@
   .extracted-fields .field-row{display:flex;gap:8px;padding:3px 0}
   .extracted-fields .field-label{color:#6b7280;min-width:70px;flex-shrink:0}
   .extracted-fields .field-value{color:#111827;font-weight:500}
-  .field-highlight{animation:hlFade .8s ease}
-  @keyframes hlFade{0%{background:#fef9c3}100%{background:transparent}}
-  /* --- Unpaid row highlighting --- */
+  /* --- 未结佣行高亮 --- */
   tr.unpaid-row td{background:#fef2f2}
   tr.unpaid-row td:first-child{border-left:3px solid #ef4444}
   tr.unpaid-row:hover td{background:#fee2e2}
 
-  /* --- Warning banner --- */
-
-  /* --- Stat card variants --- */
   .stat-card.warn .value{color:#dc2626}
-  .stat-card .sub-row{display:flex;gap:6px;margin-top:6px;align-items:center}
-  .carrier-bar-wrap{display:flex;gap:4px;align-items:center;margin-top:6px}
-  .carrier-bar-wrap .bar-label{font-size:10px;color:#6b7280;min-width:24px}
-  .carrier-bar-wrap .bar-track{flex:1;height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden}
-  .carrier-bar-wrap .bar-fill{height:100%;border-radius:3px;transition:width .3s}
-  .bar-fill-unicom{background:#3b82f6}
-  .bar-fill-mobile{background:#22c55e}
-  .bar-fill-telecom{background:#eab308}
-  .carrier-pct{font-size:10px;color:#6b7280;min-width:28px;text-align:right}
 
   /* --- Row detail modal (mobile) --- */
   .detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:16px}
@@ -2560,27 +2545,29 @@ function renderLogRow(row) {
 
   let details = '';
   if (row.action === 'update' && fields.length && row.old_data && row.new_data) {
-    details = '<details style="margin-top:6px;font-size:12px">' +
-      '<summary style="cursor:pointer;color:#3b82f6">查看字段变更</summary>' +
-      '<div style="padding:8px;background:#f9fafb;border-radius:6px;margin-top:4px">' +
+    details = '<details><summary>查看字段变更</summary><div class="log-diff">' +
       fields.map(f => {
-        const zh = FIELD_ZH[f] || f;
         const old = row.old_data[f] ?? '';
         const nw = row.new_data[f] ?? '';
-        return '<div style="padding:2px 0"><b>' + zh + '</b>：<span style="color:#dc2626;text-decoration:line-through">' + esc(String(old)) + '</span> → <span style="color:#16a34a">' + esc(String(nw)) + '</span></div>';
+        return '<div class="log-diff-row">' +
+          '<span class="log-diff-field">' + (FIELD_ZH[f] || f) + '</span>' +
+          '<span class="log-diff-old">' + esc(String(old)) + '</span>' +
+          '<span class="log-diff-arrow">→</span>' +
+          '<span class="log-diff-new">' + esc(String(nw)) + '</span></div>';
       }).join('') +
       '</div></details>';
   } else if (row.action === 'delete' && row.old_data) {
-    details = '<div style="margin-top:6px;font-size:12px;color:#6b7280">删除前：' +
+    details = '<div class="log-diff">删除前：' +
       esc(row.old_data.name || '') + ' / ' + esc(row.old_data.phone || '') + '</div>';
   }
 
-  return '<div class="log-item" style="padding:12px;border-bottom:1px solid #f3f4f6">' +
-    '<div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7280">' +
-      '<span>' + actionLabel + ' · ' + esc(row.actor || '未知') + '</span>' +
-      '<span>' + time + '</span>' +
+  return '<div class="log-item">' +
+    '<div class="log-header">' +
+      '<span><span class="log-action log-action-' + esc(row.action) + '">' + actionLabel + '</span>' +
+        ' · ' + esc(row.actor || '未知') + '</span>' +
+      '<span class="log-time">' + time + '</span>' +
     '</div>' +
-    '<div style="margin-top:4px;font-size:13px"><b>' + esc(personName) + '</b>' +
+    '<div style="margin-top:4px"><span class="log-name">' + esc(personName) + '</span>' +
       (fields.length ? ' 修改了 ' + fields.length + ' 个字段' : '') +
     '</div>' +
     details +
