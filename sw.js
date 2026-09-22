@@ -2,20 +2,23 @@
  *
  * 目的：装到手机主屏后能离线打开。
  *
- * 策略分两类：
- * - 页面导航：优先走网络，拿不到再用缓存。这样每次联网打开都是最新版本，
- *   断网时退回上一次缓存的页面，不会白屏。
- * - 静态资源（图标、manifest）：优先用缓存，后台顺带更新。
+ * 策略：同源资源一律「网络优先、带协商校验」，拿不到再用缓存。
+ * 页面拆成了 index.html / app.css / app.js 三个文件，它们必须来自同一次
+ * 发布——如果 HTML 是新的而 JS 还是缓存里的旧版，界面会直接出错。
+ * 所以不能对 JS/CSS 用「缓存优先」，每次都向服务器确认（未变化时只回 304，
+ * 开销很小），只有断网时才退回缓存。
  *
- * Supabase 的接口请求一律不缓存 —— 订单数据必须实时，缓存了会看到旧账。
- * 离线时的数据展示由页面自己用 localStorage 处理，见 index.html。
+ * Supabase 的接口请求一律不经过这里 —— 订单数据必须实时，缓存了会看到旧账。
+ * 离线时的数据展示由页面自己用 localStorage 处理，见 app.js。
  */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'sales-order-' + VERSION;
 
 const SHELL = [
   './',
   './index.html',
+  './app.css',
+  './app.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png'
@@ -49,29 +52,18 @@ self.addEventListener('fetch', event => {
   // 跨域资源不接管
   if (url.origin !== self.location.origin) return;
 
-  if (req.mode === 'navigate') {
-    event.respondWith(
-      fetch(req)
-        .then(res => {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put('./index.html', copy));
-          return res;
-        })
-        .catch(() => caches.match('./index.html').then(r => r || caches.match('./')))
-    );
-    return;
-  }
+  // 导航请求统一存成 index.html，离线时不管带什么查询参数都能打开
+  const cacheKey = req.mode === 'navigate' ? './index.html' : req;
 
   event.respondWith(
-    caches.match(req).then(cached => {
-      const network = fetch(req).then(res => {
+    fetch(req, { cache: 'no-cache' })
+      .then(res => {
         if (res && res.ok) {
           const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(req, copy));
+          caches.open(CACHE).then(c => c.put(cacheKey, copy));
         }
         return res;
-      }).catch(() => cached);
-      return cached || network;
-    })
+      })
+      .catch(() => caches.match(cacheKey).then(r => r || caches.match('./')))
   );
 });
