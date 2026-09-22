@@ -47,6 +47,7 @@
 <div class="trunc-banner" id="truncBanner"></div>
 <div class="scope-line" id="scopeLine"></div>
 <div class="stats" id="stats"></div>
+<div class="renew-wrap" id="renewWrap"></div>
 <div class="trend-wrap" id="trendWrap"></div>
 <div class="analysis-grid" id="analysisGrid"></div>
 
@@ -236,18 +237,19 @@
   <div class="modal">
     <h2>&#9889; 智能录入</h2>
     <p style="font-size:13px;color:#6b7280;margin-bottom:12px">粘贴下单信息，自动提取并填充表单</p>
-    <textarea class="paste-area" id="smartText" placeholder="粘贴订单信息，例如：
+    <textarea class="paste-area" id="smartText" oninput="resetSmartMode()" placeholder="粘贴订单信息，例如：
 姓名：苏杰
 联系方式：17365306527
 身份证：452133200206081817
 办理地址（具体到房号）：江苏省无锡市滨湖区雪浪街道雪新苑7栋1302号
 办理套餐：移动单宽带1000兆，480元一年，包安装"></textarea>
     <p class="parse-hint">标签后带括号备注、用空格代替冒号都能识别；带宽支持
-      1000M / 1000兆 / 千兆，时限支持「一年」「两年」「18个月」「半年」。</p>
+      1000M / 1000兆 / 千兆，时限支持「一年」「两年」「18个月」「半年」。<br>
+      <b>一次可以粘贴多条</b>：每条以「姓名」开头即可，会先列出来给你核对再批量保存。</p>
     <div class="extracted-fields" id="extractedPreview"></div>
     <div class="modal-actions">
       <button class="btn btn-cancel" onclick="closeSmartModal()">取消</button>
-      <button class="btn btn-smart" onclick="parseAndFill()">提取并填充</button>
+      <button class="btn btn-smart" id="smartActionBtn" onclick="parseAndFill()">提取并填充</button>
     </div>
   </div>
 </div>
@@ -282,6 +284,9 @@
 </div>
 
 </div><!-- /#appRoot -->
+
+<!-- 页面内提示：放在 #appRoot 外面，登录页和弹窗上方都能显示 -->
+<div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
 <script src="app.js"></script>
 </body>

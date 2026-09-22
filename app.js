@@ -490,6 +490,7 @@ function renderAll() {
   const view = getFilteredOrders();
   renderScope(view);
   renderStats(view);
+  renderRenewals();
   renderTrend();
   renderAnalysis();
   renderTable(view);
@@ -792,6 +793,62 @@ function setCityFilter(province, city) {
   renderAll();
 }
 
+/* ========== 页面内提示（替代 alert）==========
+   alert() 在手机上是阻塞式弹窗，还会打断正在填的表单。
+   opts.type: info / success / warn / error；opts.action: { label, onClick }（如「撤销」）。
+   报错信息里可能带服务端原文，一律按纯文本塞，不当 HTML 解析。
+   返回一个关闭函数。 */
+function toast(message, opts = {}) {
+  const stack = document.getElementById('toastStack');
+  if (!stack) return () => {};
+  const type = opts.type || 'info';
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+
+  const text = document.createElement('span');
+  text.className = 'toast-text';
+  text.textContent = message;
+  el.appendChild(text);
+
+  let timer = null;
+  let gone = false;
+  const dismiss = () => {
+    if (gone) return;
+    gone = true;
+    clearTimeout(timer);
+    el.classList.add('leaving');
+    setTimeout(() => el.remove(), 200);
+  };
+
+  if (opts.action) {
+    const btn = document.createElement('button');
+    btn.className = 'toast-action';
+    btn.textContent = opts.action.label;
+    btn.onclick = () => { dismiss(); opts.action.onClick(); };
+    el.appendChild(btn);
+  }
+  const close = document.createElement('button');
+  close.className = 'toast-close';
+  close.setAttribute('aria-label', '关闭提示');
+  close.textContent = '×';
+  close.onclick = dismiss;
+  el.appendChild(close);
+
+  // 带操作的（如撤销）要留够反应时间；报错比普通提示多停一会儿
+  const ms = opts.duration ?? (opts.action ? 8000 : type === 'error' ? 6000 : 3500);
+  const arm = t => { clearTimeout(timer); timer = setTimeout(dismiss, t); };
+  arm(ms);
+  // 鼠标停在上面时不自动收走，读长报错时不会看到一半消失。
+  // 只认真鼠标：手机上点一下会触发 mouseenter 却不会有 mouseleave，
+  // 用 mouse 事件的话提示会永远挂在屏幕上。
+  el.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') clearTimeout(timer); });
+  el.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') arm(2000); });
+
+  stack.appendChild(el);
+  return dismiss;
+}
+
 function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 // 放进属性值时还要挡住引号
 function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
@@ -831,6 +888,120 @@ function settleDays(o) {
   if (!a || !b) return null;
   const days = Math.round((b - a) / 86400000);
   return days >= 0 ? days : null;
+}
+
+/* ========== 套餐到期续约提醒 ==========
+   到期日 = 办理日期 + 时限。没有单独记录装机日，办理日期是能拿到的最近似值。
+   到期是二次客资机会：提前联系续约或推荐升级。 */
+
+// 时限写法五花八门：6个月 / 1年 / 18个月 / 一年 / 两年 / 半年；认不出返回 0
+function durationMonths(str) {
+  const s = String(str || '').trim();
+  if (!s) return 0;
+  if (/半年/.test(s)) return 6;
+  const y = s.match(new RegExp('([' + CN_NUM_CHARS + ']+)\\s*年'));
+  if (y && cnNumber(y[1])) return cnNumber(y[1]) * 12;
+  const m = s.match(new RegExp('([' + CN_NUM_CHARS + ']+)\\s*个?月'));
+  if (m && cnNumber(m[1])) return cnNumber(m[1]);
+  return 0;
+}
+
+// 加月份时日要夹紧：1 月 31 日 + 1 个月应是 2 月 28/29 日，
+// 直接 new Date(y, m+1, 31) 会溢出成 3 月初
+function addMonthsClamped(d, n) {
+  const y = d.getFullYear(), m = d.getMonth() + n;
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  return new Date(y, m, Math.min(d.getDate(), lastDay));
+}
+
+function expiryDate(o) {
+  const start = parseYmd(o.applyDate);
+  const months = durationMonths(o.duration);
+  return (start && months) ? addMonthsClamped(start, months) : null;
+}
+
+const RENEW_WINDOW = 30;   // 前后各看 30 天：快到期的要联系，刚过期的还来得及挽回
+
+function renewalCandidates(list) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  // 同一手机号后来又办过单，说明已经续上了，不必再提醒
+  const latestByPhone = new Map();
+  allOrders.forEach(o => {
+    if (!o.phone || !o.applyDate) return;
+    if (!latestByPhone.has(o.phone) || o.applyDate > latestByPhone.get(o.phone)) {
+      latestByPhone.set(o.phone, o.applyDate);
+    }
+  });
+  return list
+    .filter(o => !o.phone || latestByPhone.get(o.phone) === o.applyDate)
+    .map(o => {
+      const exp = expiryDate(o);
+      if (!exp) return null;
+      return { o, exp, daysLeft: Math.round((exp - today) / 86400000) };
+    })
+    .filter(r => r && r.daysLeft >= -RENEW_WINDOW && r.daysLeft <= RENEW_WINDOW)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+}
+
+let renewExpanded = false;
+const RENEW_PREVIEW = 5;
+
+function toggleRenewals() {
+  renewExpanded = !renewExpanded;
+  renderRenewals();
+}
+
+// 跟随除月份以外的筛选：到期的单都是一两年前办的，吃了月份筛选就永远是空的
+function renderRenewals() {
+  const wrap = document.getElementById('renewWrap');
+  if (!wrap) return;
+  const items = renewalCandidates(selectOrders('month'));
+  if (!items.length) { wrap.innerHTML = ''; return; }
+
+  const expired = items.filter(r => r.daysLeft < 0).length;
+  const upcoming = items.length - expired;
+  const shown = renewExpanded ? items : items.slice(0, RENEW_PREVIEW);
+
+  const rows = shown.map(({ o, exp, daysLeft }) => {
+    const idx = orders.indexOf(o);
+    const status = daysLeft < 0
+      ? '<span class="age-bad">已到期 ' + (-daysLeft) + ' 天</span>'
+      : daysLeft === 0
+        ? '<span class="age-bad">今天到期</span>'
+        : '<span class="' + (daysLeft <= 7 ? 'age-warn' : 'age-ok') + '">剩 ' + daysLeft + ' 天</span>';
+    return '<tr class="clickable"' + (idx >= 0 ? ' onclick="showRowDetail(' + idx + ')"' : '') +
+        ' title="点击查看订单详情">' +
+      '<td class="col-name">' + esc(o.name) + '</td>' +
+      // tel: 链接在手机上点一下就能拨号；阻止冒泡，免得同时弹出详情
+      '<td><a class="renew-tel" href="tel:' + escAttr(o.phone) + '" onclick="event.stopPropagation()">' +
+        esc(o.phone) + '</a></td>' +
+      '<td class="renew-city">' + esc(o.city) + '</td>' +
+      '<td><span class="badge ' + carrierBadge(o.carrier) + '">' + esc(o.carrier) + '</span> ' +
+        '<span class="col-package">' + esc(o.package) + '</span> ' +
+        '<span class="an-muted">' + esc(o.duration) + '</span></td>' +
+      '<td class="renew-apply">' + esc(o.applyDate) + '</td>' +
+      '<td>' + ymd(exp) + '</td>' +
+      '<td class="text-right">' + status + '</td>' +
+    '</tr>';
+  }).join('');
+
+  const more = items.length > RENEW_PREVIEW
+    ? '<button class="btn-link" onclick="toggleRenewals()">' +
+        (renewExpanded ? '收起' : '展开全部 ' + items.length + ' 位') + '</button>'
+    : '';
+
+  wrap.innerHTML = '<div class="renew-card">' +
+    '<h3>续约提醒' +
+      '<span class="hint">' +
+        (upcoming ? RENEW_WINDOW + ' 天内到期 <b>' + upcoming + '</b> 位' : '') +
+        (upcoming && expired ? ' · ' : '') +
+        (expired ? '已到期 <b>' + expired + '</b> 位' : '') +
+        ' · 到期日按办理日期 + 时限推算</span>' + more + '</h3>' +
+    '<table class="renew-table"><thead><tr>' +
+      '<th>客户</th><th>手机号</th><th class="renew-city">城市</th><th>原套餐</th>' +
+      '<th class="renew-apply">办理日期</th><th>到期日</th><th class="text-right">状态</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 // 用中位数而不是平均：样本少的时候一笔拖很久的单会把平均值整个带偏
@@ -1129,9 +1300,9 @@ function closeModal() { document.getElementById('modalOverlay').classList.remove
 // 手动录入时，从地址栏文本识别省市并回填——复用智能录入用的同一套地址解析逻辑
 function fillLocationFromAddress() {
   const addr = f_address.value.trim();
-  if (!addr) { alert('请先填写地址'); return; }
+  if (!addr) { toast('请先填写地址', { type: 'warn' }); return; }
   const loc = extractCityFromAddress(addr);
-  if (!loc.city && !loc.province) { alert('未能从地址中识别出省市，请手动填写'); return; }
+  if (!loc.city && !loc.province) { toast('未能从地址中识别出省市，请手动填写', { type: 'warn' }); return; }
   if (loc.city) f_city.value = loc.city;
   if (loc.province) f_province.value = loc.province;
 }
@@ -1139,18 +1310,18 @@ function fillLocationFromAddress() {
 async function saveOrder() {
   if (saving) return;
   const name=f_name.value.trim(), phone=f_phone.value.trim(), pkgFee=Number(f_packageFee.value)||0;
-  if(!name||!phone||!pkgFee){alert('请填写姓名、手机号和套餐费');return}
+  if (!name || !phone || !pkgFee) { toast('请填写姓名、手机号和套餐费', { type: 'error' }); return; }
 
   // 字段校验
-  if (!/^1[3-9]\d{9}$/.test(phone)) { alert('手机号格式不正确，应为 11 位数字'); f_phone.focus(); return; }
+  if (!/^1[3-9]\d{9}$/.test(phone)) { toast('手机号格式不正确，应为 11 位数字', { type: 'error' }); f_phone.focus(); return; }
   const idCard = f_idCard.value.trim().toUpperCase();
-  if (idCard && !/^\d{17}[\dX]$/.test(idCard)) { alert('身份证号格式不正确，应为 18 位'); f_idCard.focus(); return; }
+  if (idCard && !/^\d{17}[\dX]$/.test(idCard)) { toast('身份证号格式不正确，应为 18 位', { type: 'error' }); f_idCard.focus(); return; }
   const ratePctRaw = f_commissionRate.value.trim();
   if (ratePctRaw && (Number(ratePctRaw) < 0 || Number(ratePctRaw) > 100)) {
-    alert('佣金率应在 0–100 之间'); f_commissionRate.focus(); return;
+    toast('佣金率应在 0–100 之间', { type: 'error' }); f_commissionRate.focus(); return;
   }
   if (f_paybackDate.value && f_applyDate.value && f_paybackDate.value < f_applyDate.value) {
-    alert('结佣日期不能早于办理日期'); f_paybackDate.focus(); return;
+    toast('结佣日期不能早于办理日期', { type: 'error' }); f_paybackDate.focus(); return;
   }
 
   // 新增时提醒重复手机号；查全库（含隐藏的非本人归属记录），不只查当前视图
@@ -1196,7 +1367,7 @@ async function saveOrder() {
     closeModal();
     await loadData();
   } catch (e) {
-    alert('保存失败：' + e.message);
+    toast('保存失败：' + e.message, { type: 'error' });
   } finally {
     saving = false;
   }
@@ -1207,19 +1378,71 @@ function editOrder(i){openModal(i)}
 async function deleteOrder(i){
   const o = orders[i];
   if(!o)return;
-  if(!confirm('确认删除「' + (o.name||'该订单') + ' · ' + (o.phone||'') + '」？此操作不可撤销。'))return;
-  const id = o.id;
+  const label = (o.name || '该订单') + ' · ' + (o.phone || '');
+  if (!confirm('确认删除「' + label + '」？\n删除后可在提示里撤销，或到操作日志中恢复。')) return;
+  // 先把删除前的完整数据留下来，撤销时原样插回
+  const snapshot = toRow(o);
   await ensureFreshSession();
   try {
-    const res = await fetch(REST + '?id=eq.' + encodeURIComponent(id), {
+    const res = await fetch(REST + '?id=eq.' + encodeURIComponent(o.id), {
       method: 'DELETE',
       headers: HEADERS()
     });
     if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
     await loadData();
+    toast('已删除「' + label + '」', {
+      type: 'success',
+      action: { label: '撤销', onClick: () => reinsertOrder(snapshot, label) }
+    });
   } catch (e) {
-    alert('删除失败：' + e.message);
+    toast('删除失败：' + e.message, { type: 'error' });
   }
+}
+
+/* 把删掉的订单重新插回去。不带原 id：id 由数据库生成，硬塞旧 id
+   可能与自增序列冲突；插回后是一条新记录，内容与删除前一致，
+   操作日志里会多一条「新增」。 */
+async function reinsertOrder(row, label) {
+  await ensureFreshSession();
+  try {
+    const res = await fetch(REST, { method: 'POST', headers: HEADERS(), body: JSON.stringify(row) });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
+    await loadData();
+    toast('已恢复「' + label + '」', { type: 'success' });
+    return true;
+  } catch (e) {
+    toast('恢复失败：' + e.message, { type: 'error' });
+    return false;
+  }
+}
+
+// 日志里的 old_data 是数据库原始行：去掉由数据库生成的字段，其余照原样插回
+function rowForReinsert(old) {
+  const row = Object.assign({}, old);
+  delete row.id;
+  delete row.created_at;
+  delete row.updated_at;
+  return row;
+}
+
+// 同名、同手机号、同办理日期的订单已经在库里了，说明恢复过（或本来就重复录过）
+function alreadyInDb(old) {
+  return allOrders.some(o => o.phone === (old.phone || '') &&
+                             o.name === (old.name || '') &&
+                             o.applyDate === (old.apply_date || ''));
+}
+
+async function restoreFromLog(logId, btn) {
+  const log = logRowsById.get(logId);
+  if (!log || !log.old_data) return;
+  const old = log.old_data;
+  const label = (old.name || '该订单') + ' · ' + (old.phone || '');
+  if (alreadyInDb(old) && !confirm('「' + label + '」看起来已经在订单里了，仍要再恢复一条吗？')) return;
+  btn.disabled = true;
+  btn.textContent = '恢复中…';
+  const ok = await reinsertOrder(rowForReinsert(old), label);
+  btn.textContent = ok ? '已恢复' : '恢复';
+  btn.disabled = ok;
 }
 
 function exportCSV(){
@@ -1390,7 +1613,7 @@ function parseOrderText(text) {
 
 function openSmartModal() {
   document.getElementById('smartText').value = '';
-  document.getElementById('extractedPreview').style.display = 'none';
+  resetSmartMode();
   document.getElementById('smartOverlay').classList.add('active');
   setTimeout(() => document.getElementById('smartText').focus(), 100);
 }
@@ -1399,11 +1622,157 @@ function closeSmartModal() {
   document.getElementById('smartOverlay').classList.remove('active');
 }
 
+/* ========== 智能录入：一次粘贴多条 ==========
+   客资常常是群里一次发好几条。每条以「姓名」标签开头就按它切；
+   第一个「姓名」之前的文字（如「新增以下广西宽带」）当作抬头，
+   拼到每一条前面，用来补省份。没有「姓名」可切时，退而按空行切，
+   前提是每一段各有一个手机号——否则宁可当成一条，也不乱切。 */
+const NAME_LINE = /^\s*(?:客户姓名|姓\s*名|客户)\s*(?:[（(][^）)]{0,30}[）)])?\s*[：:\s]/;
+
+function splitOrderText(text) {
+  const lines = text.split(/\r?\n/);
+  const starts = lines.map((l, i) => NAME_LINE.test(l) ? i : -1).filter(i => i >= 0);
+  if (starts.length >= 2) {
+    const header = lines.slice(0, starts[0]).join('\n').trim();
+    return starts.map((s, k) => {
+      const body = lines.slice(s, k + 1 < starts.length ? starts[k + 1] : lines.length).join('\n').trim();
+      return header ? header + '\n' + body : body;
+    });
+  }
+  const blocks = text.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  if (blocks.length >= 2 && blocks.every(b => /1[3-9]\d{9}/.test(b.replace(/[\s-]/g, '')))) return blocks;
+  return [text];
+}
+
+let smartBatch = [];   // 多条模式下的待保存清单
+
+// 改了粘贴内容就回到「提取」状态，免得拿着旧的解析结果去保存
+function resetSmartMode() {
+  smartBatch = [];
+  const preview = document.getElementById('extractedPreview');
+  preview.style.display = 'none';
+  preview.innerHTML = '';
+  preview.classList.remove('batch');
+  document.querySelector('#smartOverlay .modal').classList.remove('modal-wide');
+  const btn = document.getElementById('smartActionBtn');
+  btn.textContent = '提取并填充';
+  btn.onclick = parseAndFill;
+  btn.disabled = false;
+}
+
+// 与单条保存用同一套校验：错误挡住保存，提醒只是提示
+function checkParsed(p, seenPhones) {
+  const errors = [], warns = [];
+  if (!p.name) errors.push('缺姓名');
+  if (!p.phone) errors.push('缺手机号');
+  else if (!/^1[3-9]\d{9}$/.test(p.phone)) errors.push('手机号格式不对');
+  if (!p.packageFee) errors.push('缺套餐费');
+  if (p.idCard && !/^\d{17}[\dX]$/.test(p.idCard)) errors.push('身份证号格式不对');
+  if (p.phone && allOrders.some(o => o.phone === p.phone)) warns.push('手机号已存在');
+  if (p.phone && seenPhones.has(p.phone)) warns.push('本批重复');
+  if (p.phone) seenPhones.add(p.phone);
+  return { errors, warns };
+}
+
+function renderSmartBatch() {
+  const preview = document.getElementById('extractedPreview');
+  const rows = smartBatch.map((r, i) => {
+    const p = r.parsed;
+    const notes = r.errors.map(e => '<span class="batch-err">' + e + '</span>')
+      .concat(r.warns.map(w => '<span class="batch-warn">' + w + '</span>'));
+    return '<tr class="' + (r.errors.length ? 'batch-bad' : '') + '">' +
+      '<td class="b-chk"><input type="checkbox" ' + (r.include ? 'checked ' : '') + (r.errors.length ? 'disabled ' : '') +
+        'onchange="smartBatch[' + i + '].include = this.checked; refreshBatchButton()" ' +
+        'aria-label="保存第 ' + (i + 1) + ' 条"></td>' +
+      '<td class="col-name b-name">' + esc(p.name || '—') + '</td>' +
+      '<td class="b-phone">' + esc(p.phone || '—') + '</td>' +
+      '<td class="b-city">' + esc(p.city || '—') + '</td>' +
+      '<td class="b-pkg">' + esc(p.carrier) + ' ' + esc(p.package) + ' ' + esc(p.duration) + '</td>' +
+      '<td class="text-right b-fee">' + (p.packageFee ? money(p.packageFee) : '—') + '</td>' +
+      '<td class="b-com"><input type="number" class="batch-commission" min="0" placeholder="佣金" value="' +
+        (p.commission || '') + '" oninput="smartBatch[' + i + '].commission = Number(this.value) || 0"></td>' +
+      '<td class="b-note">' + (notes.join(' ') || '<span class="an-muted">—</span>') + '</td>' +
+    '</tr>';
+  }).join('');
+  preview.innerHTML =
+    '<div class="batch-head">识别到 <b>' + smartBatch.length + '</b> 条，核对后勾选要保存的；' +
+      '佣金可在这里直接填。有错误的不能勾选，「手机号已存在」的默认不勾。</div>' +
+    '<div class="batch-scroll"><table class="batch-table"><thead><tr>' +
+      '<th></th><th>姓名</th><th>手机号</th><th>城市</th><th>套餐</th><th class="text-right">套餐费</th>' +
+      '<th>佣金</th><th>提示</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  preview.classList.add('batch');
+  preview.style.display = 'block';
+  refreshBatchButton();
+}
+
+function refreshBatchButton() {
+  const n = smartBatch.filter(r => r.include).length;
+  const btn = document.getElementById('smartActionBtn');
+  btn.textContent = n ? '批量保存 ' + n + ' 条' : '没有可保存的';
+  btn.disabled = n === 0;
+  btn.onclick = saveSmartBatch;
+}
+
+async function saveSmartBatch() {
+  const picked = smartBatch.filter(r => r.include && !r.errors.length);
+  if (!picked.length) return;
+  const missingCommission = picked.filter(r => !r.commission).length;
+  if (missingCommission && !confirm(missingCommission + ' 条没有填佣金，会按 ¥0 保存，之后可以再编辑。继续吗？')) return;
+
+  const rows = picked.map(r => {
+    const p = r.parsed;
+    const rate = p.packageFee > 0 ? Math.round(r.commission / p.packageFee * 10000) / 10000 : 0;
+    return toRow({
+      applyDate: todayStr(), paybackDate: '',
+      name: p.name, phone: p.phone, province: p.province, city: p.city,
+      carrier: p.carrier, package: p.package, duration: p.duration,
+      installFee: p.installFee, packageFee: p.packageFee,
+      commission: r.commission, commissionRate: rate,
+      idCard: p.idCard, address: p.address, salesPerson: SALES_PERSON
+    });
+  });
+
+  const btn = document.getElementById('smartActionBtn');
+  btn.disabled = true;
+  btn.textContent = '保存中…';
+  await ensureFreshSession();
+  try {
+    // 一次请求整批插入：要么全进要么全不进，不会留下半截
+    const res = await fetch(REST, { method: 'POST', headers: HEADERS(), body: JSON.stringify(rows) });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
+    closeSmartModal();
+    await loadData();
+    toast('已保存 ' + rows.length + ' 条订单', { type: 'success' });
+  } catch (e) {
+    toast('批量保存失败，一条都没有写入：' + e.message, { type: 'error' });
+    refreshBatchButton();
+  }
+}
+
 function parseAndFill() {
   const text = document.getElementById('smartText').value.trim();
-  if (!text) { alert('请粘贴订单信息'); return; }
+  if (!text) { toast('请粘贴订单信息', { type: 'warn' }); return; }
+
+  const parts = splitOrderText(text);
+  if (parts.length > 1) {
+    const seen = new Set();
+    smartBatch = parts.map(t => {
+      const parsed = parseOrderText(t);
+      const { errors, warns } = checkParsed(parsed, seen);
+      // 有错误的不能保存；手机号已在库里的多半是重复粘贴，默认不勾，需要时手动勾上
+      return { parsed, errors, warns, commission: parsed.commission || 0,
+               include: !errors.length && !warns.includes('手机号已存在') && !warns.includes('本批重复') };
+    });
+    document.querySelector('#smartOverlay .modal').classList.add('modal-wide');
+    renderSmartBatch();
+    return;
+  }
 
   const parsed = parseOrderText(text);
+  // 单条：填进「新增订单」表单。必须重置编辑状态——否则刚编辑过别的订单再来
+  // 智能录入，保存时会覆盖掉那一条，而不是新增。
+  editingIdx = -1;
+  document.getElementById('modalTitle').textContent = '新增订单';
   const preview = document.getElementById('extractedPreview');
   const fields = [
     ['姓名', parsed.name], ['手机', parsed.phone], ['身份证', parsed.idCard],
@@ -1574,12 +1943,18 @@ function renderTrend() {
       ? '<text class="trend-value" x="' + (x + barW / 2) + '" y="' + (yTop - 5) + '" text-anchor="middle">' +
         fmt(total) + '</text>'
       : '';
+    // 有单的月份才能点：空月份不在月份下拉里，点了也筛不出东西
+    const clickable = b.count > 0;
     const tip = b.key + '：' + b.count + ' 笔\n已结佣 ' + (isCount ? b.settled + ' 笔' : money(b.settled)) +
-                ' · 未结佣 ' + (isCount ? b.unsettled + ' 笔' : money(b.unsettled));
-    return '<g class="trend-bar-g' + (isPicked || isCurrent ? ' current' : '') + '">' +
+                ' · 未结佣 ' + (isCount ? b.unsettled + ' 笔' : money(b.unsettled)) +
+                (clickable ? '\n' + (isPicked ? '点击取消月份筛选' : '点击只看这个月') : '');
+    // 点击和提示挂在整组上：柱子画在热区上面，挂在热区上的话点柱子本身反而没反应
+    return '<g class="trend-bar-g' + (isPicked || isCurrent ? ' current' : '') + (clickable ? ' clickable' : '') + '"' +
+        (clickable ? ' onclick="setMonthFilter(\'' + (isPicked ? '' : b.key) + '\')"' : '') + '>' +
+      '<title>' + tip + '</title>' +
       // 透明热区：命中面积比柱子宽，窄柱子也好点
       '<rect x="' + (i * slot).toFixed(1) + '" y="' + padTop + '" width="' + slot.toFixed(1) +
-        '" height="' + (plot + padBottom) + '" fill="transparent"><title>' + tip + '</title></rect>' +
+        '" height="' + (plot + padBottom) + '" fill="transparent"/>' +
       seg + valueLabel +
       '<text class="trend-label" x="' + (x + barW / 2) + '" y="' + (H - padBottom + labelSize + 4) +
         '" style="font-size:' + labelSize + 'px" text-anchor="middle">' + b.label + '</text>' +
@@ -1631,7 +2006,7 @@ async function claimOrder(idx) {
     document.getElementById('detailOverlay').classList.remove('active');
     await loadData();
   } catch (e) {
-    alert('改归属失败：' + e.message);
+    toast('改归属失败：' + e.message, { type: 'error' });
   }
 }
 
@@ -1783,7 +2158,7 @@ function handleCSVFile(input) {
   const reader = new FileReader();
   reader.onload = e => {
     const plan = buildImportPlan(e.target.result);
-    if (plan.error) { alert(plan.error); return; }
+    if (plan.error) { toast(plan.error, { type: 'error', duration: 8000 }); return; }
     pendingImport = { rows: plan.rows, skipped: plan.skipped, invalid: plan.invalid };
 
     document.getElementById('csvImportContent').innerHTML =
@@ -1803,7 +2178,7 @@ function handleCSVFile(input) {
     document.getElementById('csvConfirmBtn').disabled = plan.rows.length === 0;
     document.getElementById('csvImportOverlay').classList.add('active');
   };
-  reader.onerror = () => alert('读取文件失败，请重试');
+  reader.onerror = () => toast('读取文件失败，请重试', { type: 'error' });
   reader.readAsText(file, 'utf-8');
 }
 
@@ -1838,10 +2213,12 @@ async function confirmCSVImport() {
   closeCSVImport();
   btn.textContent = '确认导入';
   await loadData();
-  alert('导入完成：成功 ' + imported + ' 条' +
+  // 有失败批次时停久一点，失败明细要看得完
+  toast('导入完成：成功 ' + imported + ' 条' +
         (skipped ? '，跳过重复 ' + skipped + ' 条' : '') +
         (invalid ? '，无效 ' + invalid + ' 条' : '') +
-        (errors.length ? '\n\n失败：\n' + errors.join('\n') : ''));
+        (errors.length ? '\n失败：\n' + errors.join('\n') : ''),
+        { type: errors.length ? 'warn' : 'success', duration: errors.length ? 12000 : 5000 });
 }
 
 /* ========== 功能 7：操作日志 ========== */
@@ -1851,8 +2228,10 @@ async function openLogViewer() {
   await ensureFreshSession();
   const url = SUPABASE_URL + '/rest/v1/order_logs?select=*&order=created_at.desc&limit=50';
   fetch(url, { headers: HEADERS() })
-    .then(r => r.json())
+    // 401/404 时返回的是报错对象而不是数组，先判掉，否则会报一个看不懂的 map 错误
+    .then(r => r.ok ? r.json() : r.text().then(t => { throw new Error('HTTP ' + r.status + ' ' + t.slice(0, 120)); }))
     .then(rows => {
+      logRowsById = new Map((rows || []).map(r => [r.id, r]));
       if (!rows || rows.length === 0) {
         document.getElementById('logContent').innerHTML = '<div class="log-empty">暂无操作日志</div>';
         return;
@@ -1861,9 +2240,13 @@ async function openLogViewer() {
     })
     .catch(err => {
       document.getElementById('logContent').innerHTML =
-        '<div class="log-empty" style="color:#dc2626">加载失败：' + err.message + '（确认已在 SQL Editor 执行 order_logs 表建表脚本）</div>';
+        '<div class="log-empty" style="color:#dc2626">加载失败：' + esc(err.message) +
+        '（确认已在 SQL Editor 执行 order_logs 表建表脚本）</div>';
     });
 }
+
+// 当前日志列表按 id 存一份，「恢复」按钮只传 id，不把整行数据塞进 onclick
+let logRowsById = new Map();
 
 function closeLogViewer() {
   document.getElementById('logOverlay').classList.remove('active');
@@ -1896,8 +2279,15 @@ function renderLogRow(row) {
       }).join('') +
       '</div></details>';
   } else if (row.action === 'delete' && row.old_data) {
-    details = '<div class="log-diff">删除前：' +
-      esc(row.old_data.name || '') + ' / ' + esc(row.old_data.phone || '') + '</div>';
+    // 已经在库里的就不再给恢复入口，避免同一条被恢复两次
+    const restored = alreadyInDb(row.old_data);
+    // id 可能是数字也可能是 uuid 字符串，JSON.stringify 后两种都是合法的 JS 字面量
+    const btn = restored
+      ? '<span class="log-restored">已在订单中</span>'
+      : '<button class="btn btn-sm btn-restore" onclick="restoreFromLog(' +
+          escAttr(JSON.stringify(row.id)) + ', this)">恢复</button>';
+    details = '<div class="log-diff log-deleted"><span>删除前：' +
+      esc(row.old_data.name || '') + ' / ' + esc(row.old_data.phone || '') + '</span>' + btn + '</div>';
   }
 
   return '<div class="log-item">' +
