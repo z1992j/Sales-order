@@ -78,7 +78,7 @@ https://z1992j.github.io/Sales-order/
    - 勾选 **Auto Confirm User**（不勾的话账号需要邮箱验证，无法登录）
 4. 保存
 
-邮箱地址必须和 `index.html` 里的 `AUTH_EMAIL` 完全一致。密码若与页面登录密码
+邮箱地址必须和 `app.js` 里的 `AUTH_EMAIL` 完全一致。密码若与页面登录密码
 不一致，页面会拿不到数据库令牌，顶部横幅会提示 `Invalid login credentials`。
 
 ### 第 2 步：锁死数据库
@@ -106,7 +106,7 @@ https://z1992j.github.io/Sales-order/
 node tools/hash-password.js 新密码
 ```
 
-1. 把命令输出的 `PASSWORD_HASH` 那一行替换 `index.html` 中的同名常量。
+1. 把命令输出的 `PASSWORD_HASH` 那一行替换 `app.js` 中的同名常量。
 2. 到 Supabase → Authentication → Users，把 `team@sales-order.local`
    的密码改成同一个新密码。
 
@@ -130,7 +130,15 @@ Supabase 要求密码至少 6 位。建议用长一些的密码：源码里只�
 
 ## 开发
 
-单文件应用，没有构建步骤。本地预览：
+没有构建步骤，三个文件各司其职：
+
+| 文件 | 内容 |
+|---|---|
+| `index.html` | 页面结构 |
+| `app.css` | 样式 |
+| `app.js` | 全部逻辑（普通脚本，不是 ES module——页面里的 `onclick` 依赖全局函数） |
+
+本地预览：
 
 ```bash
 python3 -m http.server 8000

@@ -1,0 +1,374 @@
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;background:#f0f2f5;color:#1f2937;font-size:14px;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.header{background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:24px 32px 18px}
+.header h1{font-size:22px;font-weight:600}
+.header p{font-size:12px;opacity:.8;margin-top:3px}
+.container{max-width:1600px;margin:0 auto;padding:0 16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px auto;max-width:1600px;padding:0 16px}
+.stat-card{background:#fff;border-radius:10px;padding:14px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.stat-card.clickable{cursor:pointer;transition:box-shadow .15s,transform .15s}
+.stat-card.clickable:hover{box-shadow:0 4px 10px rgba(0,0,0,.1);transform:translateY(-1px)}
+.stat-card .label{font-size:11px;color:#6b7280}
+.stat-card .value{font-size:20px;font-weight:700;color:#1e40af;margin-top:3px}
+.toolbar{display:flex;flex-direction:column;gap:10px;margin:12px auto;max-width:1600px;padding:0 16px}
+.tb-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%}
+.tb-row-main{padding-bottom:2px}
+.tb-row-filters{padding:8px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.tb-row-filters .ctrl{border-color:transparent;background:#f9fafb;min-width:120px}
+.tb-row-filters .ctrl:hover{border-color:#e5e7eb;background:#fff}
+.tb-row-filters .ctrl:focus{background:#fff;border-color:#3b82f6}
+.tb-row-filters .sep{width:1px;align-self:stretch;background:#e5e7eb;margin:0 2px}
+.tb-row-time{justify-content:space-between}
+.tb-actions{display:flex;gap:8px;flex-shrink:0}
+.tb-actions-secondary .btn{font-size:12px}
+.search-box{display:flex;align-items:center;background:#fff;border-radius:8px;padding:0 12px;border:1px solid #e5e7eb;flex:1;min-width:200px}
+.search-box input{border:none;outline:none;padding:9px 8px;font-size:13px;width:100%;background:transparent}
+.ctrl{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px 30px 8px 12px;font-size:13px;color:#374151;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 10px center;transition:.15s}
+.ctrl:hover{border-color:#cbd5e1}
+.ctrl:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:.15s}
+.btn-primary{background:#1e40af;color:#fff}.btn-primary:hover{background:#1e3a8a}
+.btn-smart{background:linear-gradient(135deg,#059669,#10b981);color:#fff}
+.btn-smart:hover{background:linear-gradient(135deg,#047857,#059669)}
+.btn-ghost{background:transparent;color:#374151;border:1px solid #e5e7eb}
+.btn-ghost:hover{background:#f3f4f6;border-color:#cbd5e1}
+.btn-sm{padding:4px 9px;font-size:11.5px;border-radius:6px;margin-right:3px}
+.btn-sm:last-child{margin-right:0}
+.btn-danger{background:#fee2e2;color:#dc2626}.btn-danger:hover{background:#fca5a5}
+.btn-cancel{background:#f3f4f6;color:#374151}
+.table-wrap{max-width:1600px;margin:0 auto 32px;padding:0 16px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);font-size:13px}
+thead{background:#f9fafb}
+th{padding:9px 8px;text-align:left;font-size:11.5px;font-weight:600;color:#6b7280;white-space:nowrap;letter-spacing:.02em}
+td{padding:8px 8px;border-top:1px solid #f3f4f6;vertical-align:middle;font-size:12.5px;line-height:1.45;color:#1f2937}
+td.nowrap{white-space:nowrap}
+tr:hover td{background:#f8fafc}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500}
+/* 徽章底色与分析图里的运营商识别色同源，全站认色一致。
+   文字本身写着运营商名，颜色只是强化，不承担唯一识别。 */
+.badge-unicom{background:#e4eefb;color:#1f5aa3}
+.badge-mobile{background:#fce9e0;color:#a8431c}
+.badge-telecom{background:#dcf3ea;color:#157954}
+.empty{text-align:center;padding:48px 16px;color:#9ca3af}
+.text-right{text-align:right}
+.col-name{font-weight:600;color:#111827}
+.col-commission{color:#16a34a;font-weight:600}
+/* 未结佣账龄：30 天内、30–59 天、60 天以上 */
+.age-ok{color:#6b7280}
+.age-warn{color:#b45309;font-weight:600}
+.age-bad{color:#dc2626;font-weight:700}
+/* 地址是全表最宽的一列。截断成一行，悬停看全文，详情弹窗里也有完整地址。
+   表格是 auto 布局，max-width 得加在内层元素上才生效。 */
+.col-address span{display:block;max-width:150px;overflow:hidden;
+                  text-overflow:ellipsis;white-space:nowrap}
+.col-id{font-size:12px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px;width:92%;max-width:640px;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:16px;margin-bottom:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column}
+.form-group.span2{grid-column:span 2}
+.form-group.span3{grid-column:1/-1}
+.form-group label{font-size:11px;font-weight:600;color:#374151;margin-bottom:3px}
+.form-group input,.form-group select,.form-group textarea{padding:8px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;outline:none;transition:.15s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.total-row td{background:#f0f9ff;font-weight:700;border-top:2px solid #bfdbfe}
+.paste-area{width:100%;min-height:160px;padding:12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;line-height:1.7;font-family:inherit;outline:none;resize:vertical;transition:.15s}
+.paste-area:focus{border-color:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.15)}
+.parse-hint{font-size:12px;color:#6b7280;margin-top:8px;line-height:1.6}
+.extracted-fields{margin-top:16px;padding:14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:13px;display:none}
+.extracted-fields .field-row{display:flex;gap:8px;padding:3px 0}
+.extracted-fields .field-label{color:#6b7280;min-width:70px;flex-shrink:0}
+.extracted-fields .field-value{color:#111827;font-weight:500}
+/* --- 未结佣行高亮 --- */
+tr.unpaid-row td{background:#fef2f2}
+tr.unpaid-row td:first-child{border-left:3px solid #ef4444}
+tr.unpaid-row:hover td{background:#fee2e2}
+
+.stat-card.warn .value{color:#dc2626}
+
+/* --- Row detail modal (mobile) --- */
+.detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:16px}
+.detail-overlay.active{display:flex}
+.detail-card{background:#fff;border-radius:12px;padding:20px;width:100%;max-width:420px;max-height:85vh;overflow-y:auto}
+.detail-card h3{font-size:16px;font-weight:600;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.detail-card .close-btn{background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;padding:4px 8px}
+.detail-card .close-btn:hover{color:#1f2937}
+.detail-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f3f4f6;font-size:13px}
+.detail-row:last-child{border-bottom:none}
+.detail-row .dl{color:#6b7280;flex-shrink:0;margin-right:12px}
+.detail-row .dv{color:#1f2937;font-weight:500;text-align:right;word-break:break-all}
+
+/* 套餐原始数据大小写不一，显示时统一为大写，列看起来才齐 */
+.col-package{text-transform:uppercase}
+
+/* --- 结佣状态筛选：一眼看到、一下点中，不用先展开下拉 --- */
+.chip{padding:7px 14px;border:1px solid #e5e7eb;border-radius:999px;background:#fff;color:#374151;
+      font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:.15s}
+.chip:hover{border-color:#cbd5e1;background:#f9fafb}
+.chip.active{background:#1e40af;border-color:#1e40af;color:#fff}
+.chip-unpaid.active{background:#dc2626;border-color:#dc2626}
+/* 逾期档是「未结佣」的下一级，选中未结佣后才出现，平时不占地方 */
+.chip-sub{display:none;gap:6px;align-items:center}
+.chip-sub.visible{display:inline-flex}
+.chip-sub::before{content:'›';color:#9ca3af;font-size:14px;margin-right:-2px}
+.chip-sm{padding:5px 10px;font-size:11.5px}
+.chip-sm.active{background:#b45309;border-color:#b45309}
+
+/* --- CSV import preview --- */
+.csv-preview-table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
+.csv-preview-table th,.csv-preview-table td{padding:6px 8px;border:1px solid #e5e7eb;text-align:left}
+.csv-preview-table th{background:#f9fafb;font-weight:600;color:#6b7280}
+.csv-preview-table td{color:#1f2937}
+.csv-import-info{font-size:13px;color:#374151;margin:8px 0}
+.csv-import-info strong{color:#1e40af}
+
+/* --- Operation log viewer --- */
+.log-list{max-height:60vh;overflow-y:auto}
+.log-item{padding:10px 14px;border-bottom:1px solid #f3f4f6;font-size:13px}
+.log-item:last-child{border-bottom:none}
+.log-item .log-header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.log-item .log-time{font-size:11px;color:#9ca3af;white-space:nowrap}
+.log-item .log-action{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px}
+.log-action-insert{background:#dcfce7;color:#16a34a}
+.log-action-update{background:#dbeafe;color:#2563eb}
+.log-action-delete{background:#fee2e2;color:#dc2626}
+.log-item .log-name{font-weight:500;color:#111827}
+.log-item details{margin-top:6px;font-size:12px}
+.log-item details summary{cursor:pointer;color:#6b7280;font-size:12px}
+.log-item details summary:hover{color:#3b82f6}
+.log-diff{margin-top:4px;padding:8px;background:#f9fafb;border-radius:6px;font-size:12px}
+.log-diff-row{display:flex;gap:8px;padding:2px 0}
+.log-diff-field{color:#6b7280;min-width:80px;flex-shrink:0}
+.log-diff-old{color:#dc2626;text-decoration:line-through}
+.log-diff-new{color:#16a34a}
+.log-diff-arrow{color:#9ca3af}
+.log-empty{text-align:center;padding:32px 16px;color:#9ca3af;font-size:13px}
+
+/* --- Login gate --- */
+#appRoot{display:none}
+#appRoot.ready{display:block}
+.login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1e3a8a,#3b82f6);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-overlay.hidden{display:none}
+.login-card{background:#fff;border-radius:16px;padding:32px 28px;width:100%;max-width:360px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.login-card h2{font-size:19px;font-weight:600;margin-bottom:6px;color:#111827}
+.login-card p.sub{font-size:12px;color:#6b7280;margin-bottom:20px}
+.login-card label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px}
+.login-card input{width:100%;padding:11px 12px;border:1px solid #d1d5db;border-radius:9px;font-size:15px;outline:none;letter-spacing:2px;transition:.15s}
+.login-card input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.login-card .btn{width:100%;justify-content:center;margin-top:16px;padding:11px}
+.login-err{color:#dc2626;font-size:12px;margin-top:10px;min-height:16px}
+.login-remember{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:#6b7280}
+.login-remember input{width:auto;margin:0}
+.btn-view{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);
+          padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;outline:none}
+.btn-view:hover{background:rgba(255,255,255,.28)}
+.btn-view.active{background:#fbbf24;color:#78350f;border-color:#fbbf24}
+.other-view-banner{display:none;background:#fffbeb;border:1px solid #fcd34d;color:#92400e;
+                   padding:10px 18px;border-radius:8px;margin:10px auto;max-width:1600px;
+                   font-size:12px;line-height:1.6}
+.other-view-banner.visible{display:block}
+.btn-claim{background:#dbeafe;color:#1e40af;font-weight:600}
+.btn-claim:hover{background:#bfdbfe}
+.btn-logout{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;outline:none}
+.btn-logout:hover{background:rgba(255,255,255,.28)}
+
+/* --- Setup notice --- */
+.setup-banner{display:none;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;padding:10px 18px;border-radius:8px;margin:10px auto;max-width:1600px;font-size:12px;line-height:1.6}
+.setup-banner.visible{display:block}
+.setup-banner code{background:#ffedd5;padding:1px 5px;border-radius:4px;font-size:11px}
+
+/* --- Monthly trend chart --- */
+.trend-wrap{max-width:1600px;margin:0 auto 12px;padding:0 16px}
+.trend-card{background:#fff;border-radius:10px;padding:14px 18px 10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.trend-card h3{font-size:13px;font-weight:600;color:#374151;margin-bottom:10px;display:flex;
+               align-items:center;flex-wrap:wrap;gap:8px}
+.trend-card h3 .hint{font-size:11px;font-weight:400;color:#9ca3af;margin-left:auto}
+.trend-svg{width:100%;height:auto;max-height:170px;display:block}
+/* 柱子的颜色由 fill 属性直接给（已结佣/未结佣两段），
+   这里只做悬停反馈；选中月/当月整组略微加重。 */
+.trend-bar-g rect{transition:opacity .15s}
+.trend-bar-g:hover rect{opacity:.8}
+.trend-label{font-size:10px;fill:#9ca3af}
+.trend-value{font-size:10px;fill:#1e40af;font-weight:600}
+.trend-empty{text-align:center;color:#9ca3af;font-size:12px;padding:24px 0}
+.trend-toggle{display:flex;gap:0;border:1px solid #e5e7eb;border-radius:7px;overflow:hidden}
+.trend-toggle button{padding:4px 12px;font-size:11px;border:none;background:#fff;color:#6b7280;cursor:pointer;transition:.15s}
+.trend-toggle button:not(:last-child){border-right:1px solid #e5e7eb}
+.trend-toggle button.active{background:#1e40af;color:#fff}
+/* 选中月/当月：加一圈同色描边点一下，不改柱子本身的颜色语义 */
+.trend-bar-g.current rect{stroke:rgba(30,64,175,.35);stroke-width:1}
+.trend-bar-g.current rect[fill="transparent"]{stroke:none}
+
+/* --- 分析区：热销组合 / 城市 Top5 / 运营商表现 ---
+   配色取自经 validate_palette.js 校验的分类槽（原来的移动绿 vs 电信黄
+   在色盲模拟下 ΔE 仅 4.2，几乎分不开）。三色槽 all-pairs 全项通过。
+   青色对白底对比度 2.82:1，靠每根条自带的文字标签补足，不单靠颜色识别。 */
+:root{
+  --c-unicom:#2a78d6;   /* 联通 */
+  --c-mobile:#eb6834;   /* 移动 */
+  --c-telecom:#1baf7a;  /* 电信 */
+  --c-settled:#2a78d6;  /* 已结佣 */
+  --c-unsettled:#e0952a;/* 未结佣 */
+  --c-bar:#2a78d6;      /* 单系列条形：同一色相，不按大小变深，避免把长度重复编码成颜色 */
+  --grid-line:#e5e7eb;
+  --ink-2:#6b7280;
+  --ink-3:#9ca3af;
+}
+.scope-line{max-width:1600px;margin:12px auto 0;padding:0 16px;font-size:11.5px;color:#6b7280}
+.scope-line b{color:#374151;font-weight:600}
+.analysis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px;
+               max-width:1600px;margin:0 auto 12px;padding:0 16px}
+.an-card{background:#fff;border-radius:10px;padding:14px 18px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.an-card h3{font-size:13px;font-weight:600;color:#374151;margin-bottom:2px}
+.an-card .an-hint{font-size:11px;color:var(--ink-3);margin-bottom:12px}
+.an-empty{color:var(--ink-3);font-size:12px;padding:18px 0;text-align:center}
+
+/* 条形行：标签 + 条 + 数值，标签常驻，颜色只做强化 */
+.an-row{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:10px;padding:5px 0}
+.an-row.clickable{cursor:pointer;border-radius:6px;margin:0 -6px;padding:5px 6px}
+.an-row.clickable:hover{background:#f8fafc}
+.an-label{font-size:12px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.an-track{height:10px;background:#f3f4f6;border-radius:5px;overflow:hidden}
+/* 4px 圆角数据端、方底：条从基线长出来 */
+.an-fill{height:100%;border-radius:0 4px 4px 0;min-width:2px;transition:width .3s}
+.an-val{font-size:11.5px;color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.an-val b{color:#1f2937;font-weight:600}
+
+/* 运营商表现：四列紧凑表，条只在「佣金占比」那列 */
+.an-table{width:100%;border-collapse:collapse;font-size:12px}
+.an-table th{font-size:10.5px;font-weight:500;color:var(--ink-3);text-align:right;padding:0 0 6px;white-space:nowrap}
+.an-table th:first-child,.an-table th:nth-child(2){text-align:left}
+.an-table td{padding:6px 0;border-top:1px solid #f3f4f6;text-align:right;
+             font-variant-numeric:tabular-nums;color:#1f2937;white-space:nowrap}
+.an-table td:first-child,.an-table td:nth-child(2){text-align:left}
+/* 组合标签「城市 · 运营商 · 套餐」比其他列长，放不下时截断成省略号，
+   全文在 title 里。max-width:0 配合表格 width:100% 才能让 td 收缩，
+   否则 nowrap 会把表格撑出卡片。 */
+.an-table td.an-combo{max-width:0;overflow:hidden;text-overflow:ellipsis}
+.an-table tr.clickable{cursor:pointer}
+.an-table tr.clickable:hover td{background:#f8fafc}
+.an-swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+.an-share{display:flex;align-items:center;gap:7px;min-width:110px}
+.an-share .an-track{flex:1}
+.an-muted{color:var(--ink-3)}
+
+/* 图例：两个及以上系列必须有，识别不能只靠颜色 */
+.an-legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--ink-2)}
+.an-legend span{display:inline-flex;align-items:center;gap:5px}
+.an-legend i{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+/* --- Stat card detail --- */
+.stat-card .sub{font-size:11px;color:#6b7280;margin-top:5px}
+.stat-card .delta{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:600;
+                  padding:1px 6px;border-radius:999px;margin-top:5px}
+.delta-up{background:#dcfce7;color:#16a34a}
+.delta-down{background:#fee2e2;color:#dc2626}
+.delta-flat{background:#f3f4f6;color:#6b7280}
+
+/* --- 清除筛选：平时不出现，有筛选条件时才顶到最右 --- */
+.btn-clear-filters{display:none;align-items:center;gap:5px;margin-left:auto;background:transparent;
+                   border:none;color:#6b7280;font-size:12px;cursor:pointer;padding:6px 10px;
+                   border-radius:6px;white-space:nowrap}
+.btn-clear-filters.visible{display:inline-flex}
+.btn-clear-filters:hover{color:#dc2626;background:#fef2f2}
+.filter-count{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;
+              padding:0 5px;border-radius:999px;background:#1e40af;color:#fff;font-size:10px;font-weight:700}
+
+/* --- Sticky table header + footer --- */
+.table-wrap{max-height:calc(100vh - 200px);min-height:280px;overflow:auto}
+thead th{position:sticky;top:0;z-index:2;background:#f9fafb;
+         box-shadow:inset 0 -1px 0 #e5e7eb}
+tfoot td{position:sticky;bottom:0;z-index:2}
+
+/* --- Offline notice --- */
+.offline-banner{display:none;background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3;
+                padding:9px 18px;border-radius:8px;margin:10px auto;max-width:1600px;font-size:12px}
+.offline-banner.visible{display:block}
+
+/* --- 数据被接口上限截断：会导致统计算少，必须显眼 --- */
+.trunc-banner{display:none;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;
+              padding:9px 18px;border-radius:8px;margin:10px auto;max-width:1600px;font-size:12px;line-height:1.6}
+.trunc-banner.visible{display:block}
+
+
+/* --- Mobile responsive --- */
+@media(max-width:768px){
+  .header{padding:16px}
+  .header h1{font-size:18px}
+  .stats{grid-template-columns:1fr 1fr;gap:8px;padding:0 12px}
+  .stat-card{padding:10px 14px}
+  .stat-card .value{font-size:17px}
+  .toolbar{flex-direction:column;align-items:stretch;padding:0 12px;gap:8px}
+  .search-box{max-width:100%}
+  .tb-row{flex-direction:column;align-items:stretch;gap:8px}
+  /* 筛选行仍按行排布：四个下拉两两一行，状态胶囊各占一行宽度 */
+  .tb-row-filters{padding:8px;flex-direction:row;flex-wrap:wrap;gap:6px}
+  .tb-row-filters .ctrl{flex:1 1 calc(50% - 3px);min-width:0;width:auto}
+  .tb-row-filters .sep{display:none}
+  .chip{flex:1 1 calc(50% - 3px);text-align:center;padding:9px 10px}
+  .chip-sub.visible{display:flex;width:100%;gap:6px}
+  .chip-sub::before{display:none}
+  .chip-sm{flex:1 1 0;padding:8px 6px}
+  .tb-actions,.tb-actions-secondary{flex-wrap:wrap;gap:6px}
+  .tb-actions .btn,.tb-actions-secondary .btn{flex:1;min-width:100px;justify-content:center}
+  .btn-clear-filters.visible{display:flex;width:100%;margin-left:0;justify-content:center}
+  /* 各行控件统一高度，否则搜索框、筛选、按钮三行高矮不一 */
+  .search-box,.tb-row-filters .ctrl,.chip,
+  .tb-actions .btn,.tb-actions-secondary .btn{min-height:42px}
+  .search-box input{padding:11px 8px}
+  .tb-actions .btn,.tb-actions-secondary .btn{padding:11px 14px}
+  .form-grid{grid-template-columns:1fr}
+  .form-group.span2,.form-group.span3{grid-column:1/-1}
+  /* 手机上保留表格，做紧凑处理：页面整体滚动，不做内层滚动。
+     左右留白与统计卡、工具栏统一为 12px，避免各块边缘参差。 */
+  .table-wrap{padding:0 12px;max-height:none;min-height:0}
+  .table-wrap table{font-size:12px}
+  .table-wrap th{padding:9px 5px;font-size:11px}
+  .table-wrap td{padding:9px 5px;font-size:12px;line-height:1.4}
+  .table-wrap .badge{padding:1px 6px;font-size:10px}
+  /* 序号只是行号，压到最窄并调淡，把宽度让给正文 */
+  .table-wrap thead th:nth-child(1),.table-wrap tbody td:nth-child(1){
+      width:1%;padding-left:6px;padding-right:3px;font-size:10px;color:#9ca3af;font-weight:400}
+  .table-wrap .btn-sm{padding:4px 9px;font-size:11px}
+  /* 只保留 姓名/手机/省份/城市/运营商/套餐/佣金，其余收进详情弹窗。
+     选择器限定在 .table-wrap 内，否则会误伤 ALL 视图的业绩榜表格。 */
+  /* 必须限定在 thead / tbody：合计行的单元格序号含义不同，
+     套用同一组 nth-child 会误伤它，并让列宽模型与表体对不上。 */
+  .table-wrap thead th:nth-child(2),.table-wrap tbody td:nth-child(2),   /* 办理日期 */
+  .table-wrap thead th:nth-child(3),.table-wrap tbody td:nth-child(3),   /* 结佣日期 */
+  .table-wrap thead th:nth-child(6),.table-wrap tbody td:nth-child(6),   /* 省份 */
+  .table-wrap thead th:nth-child(10),.table-wrap tbody td:nth-child(10), /* 时限 */
+  .table-wrap thead th:nth-child(11),.table-wrap tbody td:nth-child(11), /* 安装费 */
+  .table-wrap thead th:nth-child(12),.table-wrap tbody td:nth-child(12), /* 套餐费 */
+  .table-wrap thead th:nth-child(14),.table-wrap tbody td:nth-child(14), /* 佣金率 */
+  .table-wrap thead th:nth-child(15),.table-wrap tbody td:nth-child(15), /* 身份证号 */
+  .table-wrap thead th:nth-child(16),.table-wrap tbody td:nth-child(16), /* 地址 */
+  /* 操作列：点整行即可打开详情，编辑删除都在里面，手机上不必单列 */
+  .table-wrap thead th:last-child,.table-wrap tbody td:last-child{display:none}
+  /* Make visible rows tappable */
+  tr[data-idx]{cursor:pointer}
+  .scope-line{padding:0 12px}
+  .analysis-grid{grid-template-columns:1fr;padding:0 12px;gap:8px}
+  .an-card{padding:12px 14px 14px}
+  /* 窄屏标签列收窄，把宽度让给条和数值，避免三列挤成一团 */
+  .an-row{grid-template-columns:56px 1fr auto;gap:8px}
+  .an-val{font-size:11px}
+  .an-table th,.an-table td{font-size:11.5px}
+  .an-share{min-width:78px}
+  .trend-wrap{padding:0 12px}
+  .trend-card{padding:12px 14px 8px}
+  .trend-svg{max-height:none}
+  /* 窄屏一行放不下标题、汇总和切换，把汇总挪到第二行 */
+  .trend-card h3{font-size:13px}
+  .trend-card h3 .hint{order:3;width:100%;margin-left:0}
+  .trend-toggle{margin-left:auto}
+  .modal{width:98%;padding:16px}
+}
+/* 380px 以下（iPhone SE 一类）再收一档，保证仍不用横向拖动 */
+@media(max-width:380px){
+  .table-wrap th,.table-wrap td{padding:9px 4px}
+  .table-wrap table{font-size:11.5px}
+}
