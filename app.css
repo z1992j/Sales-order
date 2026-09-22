@@ -190,7 +190,8 @@ tr.unpaid-row:hover td{background:#fee2e2}
 /* 柱子的颜色由 fill 属性直接给（已结佣/未结佣两段），
    这里只做悬停反馈；选中月/当月整组略微加重。 */
 .trend-bar-g rect{transition:opacity .15s}
-.trend-bar-g:hover rect{opacity:.8}
+.trend-bar-g.clickable{cursor:pointer}
+.trend-bar-g.clickable:hover rect{opacity:.8}
 .trend-label{font-size:10px;fill:#9ca3af}
 .trend-value{font-size:10px;fill:#1e40af;font-weight:600}
 .trend-empty{text-align:center;color:#9ca3af;font-size:12px;padding:24px 0}
@@ -371,4 +372,103 @@ tfoot td{position:sticky;bottom:0;z-index:2}
 @media(max-width:380px){
   .table-wrap th,.table-wrap td{padding:9px 4px}
   .table-wrap table{font-size:11.5px}
+}
+
+/* --- 页面内提示（替代 alert）---
+   底部居中，手机上单手可及；层级高于弹窗（100/200）与登录层（500）。
+   多行文案（如导入失败明细）靠 pre-line 保留换行。 */
+.toast-stack{position:fixed;left:50%;transform:translateX(-50%);
+             bottom:calc(20px + env(safe-area-inset-bottom));z-index:600;
+             display:flex;flex-direction:column;align-items:center;gap:8px;
+             width:max-content;max-width:min(92vw,440px);pointer-events:none}
+.toast{pointer-events:auto;display:flex;align-items:flex-start;gap:10px;
+       background:#1f2937;color:#fff;border-radius:10px;padding:11px 12px 11px 14px;
+       box-shadow:0 8px 24px rgba(0,0,0,.22);font-size:13px;line-height:1.55;
+       border-left:4px solid #3b82f6;animation:toastIn .18s ease-out;max-width:100%}
+.toast.leaving{opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s}
+.toast-success{border-left-color:#16a34a}
+.toast-error{border-left-color:#dc2626}
+.toast-warn{border-left-color:#d97706}
+.toast-text{flex:1;white-space:pre-line;word-break:break-word}
+.toast-action{flex-shrink:0;background:none;border:none;color:#93c5fd;font-weight:700;
+              font-size:13px;cursor:pointer;padding:0 2px}
+.toast-action:hover{color:#bfdbfe;text-decoration:underline}
+.toast-close{flex-shrink:0;background:none;border:none;color:#9ca3af;font-size:16px;
+             line-height:1;cursor:pointer;padding:0 2px}
+.toast-close:hover{color:#fff}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* --- 操作日志：删除条目可恢复 --- */
+.log-deleted{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.btn-restore{background:#dbeafe;color:#1e40af;font-weight:600;margin:0}
+.btn-restore:hover{background:#bfdbfe}
+.btn-restore:disabled{background:#f3f4f6;color:#9ca3af;cursor:default}
+.log-restored{font-size:11px;color:#9ca3af;white-space:nowrap}
+
+/* --- 续约提醒 ---
+   有到期客户时才出现；是要去打电话的行动清单，所以放在趋势图上面。 */
+.renew-wrap{max-width:1600px;margin:0 auto 12px;padding:0 16px}
+.renew-wrap:empty{display:none}
+.renew-card{background:#fff;border-radius:10px;padding:14px 18px 10px;box-shadow:0 1px 3px rgba(0,0,0,.06);
+            border-left:3px solid #d97706}
+.renew-card h3{font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;display:flex;
+               align-items:center;flex-wrap:wrap;gap:8px}
+.renew-card h3 .hint{font-size:11px;font-weight:400;color:#9ca3af}
+.renew-card h3 .hint b{color:#b45309}
+.btn-link{margin-left:auto;background:none;border:none;color:#1e40af;font-size:12px;cursor:pointer;padding:2px 4px}
+.btn-link:hover{text-decoration:underline}
+.renew-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.renew-table th{font-size:11px;font-weight:500;color:#9ca3af;text-align:left;padding:0 8px 6px 0;white-space:nowrap}
+.renew-table td{padding:7px 8px 7px 0;border-top:1px solid #f3f4f6;white-space:nowrap;
+                font-variant-numeric:tabular-nums}
+.renew-table tr.clickable{cursor:pointer}
+.renew-table tr.clickable:hover td{background:#f8fafc}
+.renew-tel{color:#1e40af;text-decoration:none}
+.renew-tel:hover{text-decoration:underline}
+@media(max-width:768px){
+  .renew-wrap{padding:0 12px}
+  .renew-card{padding:12px 12px 8px}
+  /* 手机上收掉城市和办理日期两列，留下打电话要用的信息 */
+  .renew-table .renew-city,.renew-table .renew-apply{display:none}
+  .renew-table td,.renew-table th{padding-right:6px;font-size:12px}
+}
+
+/* --- 智能录入：多条预览 --- */
+.modal.modal-wide{max-width:880px}
+.extracted-fields.batch{background:#fff;border-color:#e5e7eb;padding:12px}
+.batch-head{font-size:12.5px;color:#374151;margin-bottom:10px;line-height:1.6}
+.batch-head b{color:#059669}
+.batch-scroll{overflow-x:auto}
+.batch-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.batch-table th{font-size:11px;font-weight:500;color:#9ca3af;text-align:left;padding:0 8px 6px 0;white-space:nowrap}
+.batch-table td{padding:6px 8px 6px 0;border-top:1px solid #f3f4f6;white-space:nowrap;vertical-align:middle}
+.batch-table tr.batch-bad td{background:#fef2f2}
+.batch-table input[type=checkbox]{width:16px;height:16px;cursor:pointer}
+.batch-commission{width:76px;padding:5px 7px;border:1px solid #d1d5db;border-radius:6px;font-size:12.5px}
+.batch-commission:focus{outline:none;border-color:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.15)}
+.batch-err,.batch-warn{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;margin:1px 2px 1px 0}
+.batch-err{background:#fee2e2;color:#b91c1c}
+.batch-warn{background:#fef3c7;color:#92400e}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+/* 手机上表格放不下，佣金输入框会被挤到屏幕外——改成每条一张小卡：
+   第一行 姓名 / 手机号 / 佣金输入，第二行 城市 / 套餐 / 套餐费，第三行提示 */
+@media(max-width:768px){
+  .batch-table thead{display:none}
+  .batch-table tr{display:grid;grid-template-columns:22px auto 1fr auto;column-gap:8px;row-gap:3px;
+                  align-items:center;padding:9px 6px;border-top:1px solid #f3f4f6;
+                  grid-template-areas:"chk name phone com" "chk city pkg fee" "chk note note note"}
+  .batch-table td{border:none;padding:0}
+  /* 单元格之间有网格间隙，底色要铺在整行上，否则会碎成一块一块 */
+  .batch-table tr td,.batch-table tr:hover td,.batch-table tr.batch-bad td{background:transparent}
+  .batch-table tr.batch-bad{background:#fef2f2;border-radius:8px}
+  .batch-table .b-chk{grid-area:chk;align-self:start;padding-top:2px}
+  .batch-table .b-name{grid-area:name}
+  .batch-table .b-phone{grid-area:phone;color:#6b7280}
+  .batch-table .b-com{grid-area:com}
+  .batch-table .b-city{grid-area:city;color:#6b7280;font-size:12px}
+  .batch-table .b-pkg{grid-area:pkg;font-size:12px}
+  .batch-table .b-fee{grid-area:fee;font-size:12px}
+  .batch-table .b-note{grid-area:note;white-space:normal}
+  .batch-table .b-note .an-muted{display:none}
+  .batch-commission{width:72px}
 }
