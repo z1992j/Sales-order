@@ -232,7 +232,10 @@ async function bootstrap() {
 const SALES_PERSON = '大卫';
 
 let orders = [];
-let editingIdx = -1;
+// 打开编辑表单时记下订单 id，保存时按 id 写回。只记下标的话，表单开着期间
+// 数据若被重新加载（网络恢复自动刷新、点了删除提示里的「撤销」），下标会
+// 指向另一条订单，保存就把别人的那条改掉了。
+let editingId = null;
 let saving = false;
 let usingCachedData = false;
 
@@ -418,6 +421,8 @@ async function loadData() {
     return;
   }
   hideOfflineBanner();
+  // 详情弹窗里的按钮绑的是旧数组下标，重新加载后可能指向别的订单，直接关掉
+  document.getElementById('detailOverlay').classList.remove('active');
   refreshFilterOptions();
   renderAll();
   document.getElementById('lastUpdate').textContent =
@@ -849,7 +854,11 @@ function toast(message, opts = {}) {
   return dismiss;
 }
 
-function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+// 纯字符串替换：原来每次都建一个 DOM 元素来转义，表格一次渲染要调几万次，
+// 2000 条时单这一项就要 100ms+，搜索框每敲一个字都会卡一下。
+// 引号也一并转义，放进属性值里同样安全。
+const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+function esc(s) { if (!s) return ''; return String(s).replace(/[&<>"']/g, c => ESC_MAP[c]); }
 // 放进属性值时还要挡住引号
 function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
 
@@ -1056,7 +1065,7 @@ function setSelectValue(sel, value) {
    按月份拆的趋势图若吃掉月份筛选，就只剩一根柱子；运营商图、地区图同理。
    这些图改为「不吃自己那一维，但高亮选中项」，其余维度照常生效。 */
 function selectOrders(except) {
-  const q = document.getElementById('searchInput').value.toLowerCase();
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
   const carrierFilter = except === 'carrier' ? '' : document.getElementById('filterCarrier').value;
   const provinceFilter = except === 'region' ? '' : document.getElementById('filterProvince').value;
   const cityFilter = except === 'region' ? '' : document.getElementById('filterCity').value;
@@ -1250,9 +1259,12 @@ function renderPaybackChips() {
   document.getElementById('agingChips').classList.toggle('visible', unpaidOn);
 }
 
+// 搜索框也算一个条件：点「热销组合」会把套餐写进搜索框，不计入的话
+// 只剩它生效时「清除筛选」按钮会消失，表格却仍是筛过的
 function activeFilterCount() {
   return FILTER_IDS.filter(id => (document.getElementById(id) || {}).value).length +
-         (paybackFilter ? 1 : 0);
+         (paybackFilter ? 1 : 0) +
+         (document.getElementById('searchInput').value.trim() ? 1 : 0);
 }
 
 function refreshFilterIndicator() {
@@ -1266,13 +1278,14 @@ function refreshFilterIndicator() {
 
 function clearAllFilters() {
   FILTER_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('searchInput').value = '';
   paybackFilter = '';
   refreshCityOptions();
   renderAll();
 }
 
 function openModal(idx) {
-  editingIdx = idx ?? -1;
+  editingId = idx != null && orders[idx] ? orders[idx].id : null;
   document.getElementById('modalTitle').textContent = idx != null ? '编辑订单' : '新增订单';
   if (idx != null) {
     const o = orders[idx];
@@ -1283,6 +1296,7 @@ function openModal(idx) {
     setSelectValue(f_duration, o.duration || '1年'); f_installFee.value=o.installFee||'';
     f_packageFee.value=o.packageFee||''; f_commission.value=o.commission||'';
     f_commissionRate.value=o.commissionRate ? Math.round(o.commissionRate*100) : ''; f_idCard.value=o.idCard||'';
+    f_commissionRate.dataset.prefilled = f_commissionRate.value;
     f_address.value=o.address||'';
   } else {
     f_applyDate.value=todayStr();
@@ -1291,11 +1305,23 @@ function openModal(idx) {
     f_carrier.value='联通'; f_package.value='300m'; f_duration.value='1年';
     f_installFee.value=''; f_packageFee.value=''; f_commission.value='';
     f_commissionRate.value=''; f_idCard.value=''; f_address.value='';
+    f_commissionRate.dataset.prefilled = '';
   }
   document.getElementById('modalOverlay').classList.add('active');
 }
 
 function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+
+// 编辑时佣金率是按旧佣金预填的。改了佣金或套餐费后它就对不上了，
+// 不清掉会把旧比例原样存回去。只在它仍是预填值时才清空（保存时按
+// 佣金 ÷ 套餐费 重算），手动改过的佣金率不动。
+['f_commission', 'f_packageFee'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    if (f_commissionRate.dataset.prefilled && f_commissionRate.value === f_commissionRate.dataset.prefilled) {
+      f_commissionRate.value = '';
+    }
+  });
+});
 
 // 手动录入时，从地址栏文本识别省市并回填——复用智能录入用的同一套地址解析逻辑
 function fillLocationFromAddress() {
@@ -1325,7 +1351,7 @@ async function saveOrder() {
   }
 
   // 新增时提醒重复手机号；查全库（含隐藏的非本人归属记录），不只查当前视图
-  if (editingIdx < 0) {
+  if (editingId == null) {
     const dup = allOrders.find(o => o.phone === phone);
     if (dup && !confirm('手机号 ' + phone + ' 已存在（' + (dup.name||'') + ' · ' +
         (dup.applyDate||'无日期') + (isMine(dup) ? '' : ' · 归属：' + (dup.salesPerson||'(空)')) +
@@ -1342,15 +1368,16 @@ async function saveOrder() {
     installFee:Number(f_installFee.value)||0, packageFee:pkgFee,
     commission, commissionRate:rate,
     idCard, address:f_address.value.trim(),
-    salesPerson: editingIdx >= 0 ? orders[editingIdx].salesPerson : SALES_PERSON
+    salesPerson: editingId != null
+      ? ((allOrders.find(o => o.id === editingId) || {}).salesPerson || SALES_PERSON)
+      : SALES_PERSON
   };
 
   saving = true;
   await ensureFreshSession();
   try {
-    if (editingIdx >= 0) {
-      const id = orders[editingIdx].id;
-      const res = await fetch(REST + '?id=eq.' + encodeURIComponent(id), {
+    if (editingId != null) {
+      const res = await fetch(REST + '?id=eq.' + encodeURIComponent(editingId), {
         method: 'PATCH',
         headers: HEADERS(),
         body: JSON.stringify(toRow(order))
@@ -1771,7 +1798,7 @@ function parseAndFill() {
   const parsed = parseOrderText(text);
   // 单条：填进「新增订单」表单。必须重置编辑状态——否则刚编辑过别的订单再来
   // 智能录入，保存时会覆盖掉那一条，而不是新增。
-  editingIdx = -1;
+  editingId = null;
   document.getElementById('modalTitle').textContent = '新增订单';
   const preview = document.getElementById('extractedPreview');
   const fields = [
@@ -1799,6 +1826,7 @@ function parseAndFill() {
   f_packageFee.value = parsed.packageFee || '';
   f_commission.value = parsed.commission || '';
   f_commissionRate.value = '';
+  f_commissionRate.dataset.prefilled = '';
   f_idCard.value = parsed.idCard;
   f_address.value = parsed.address;
 
@@ -1982,11 +2010,23 @@ function setTrendMetric(metric) {
 
 // 横竖屏或窗口尺寸切换时重画，让窄屏/宽屏两套排版都能生效。
 // 表格也要重画：合计行的 colspan 在两套排版下不同。
+// 只在宽度变化时重画：手机上一滚动，地址栏收起/展开就会触发只改高度的
+// resize，每次都把整张表重建一遍既费电又会让滚动发顿。
 let layoutResizeTimer = null;
+let lastLayoutWidth = window.innerWidth;
 window.addEventListener('resize', () => {
+  if (window.innerWidth === lastLayoutWidth) return;
+  lastLayoutWidth = window.innerWidth;
   clearTimeout(layoutResizeTimer);
   layoutResizeTimer = setTimeout(() => { renderAll(); }, 200);
 });
+
+// 搜索框防抖：每敲一个字都重建整张表，订单一多打字就卡。停顿 150ms 再算。
+let searchTimer = null;
+function onSearchInput() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(renderAll, 150);
+}
 
 /* ========== 把历史订单改到自己名下 ========== */
 async function claimOrder(idx) {
@@ -2105,8 +2145,9 @@ function buildImportPlan(text) {
     return { error: '未能识别表头：CSV 必须包含「姓名」和「手机号」两列。\n可先用「导出 CSV」得到标准模板再填写。' };
   }
 
+  // 查全库：只查当前视图的话，隐藏的非本人归属记录会被重复导入
   const existingKeys = new Set(
-    orders.filter(o => o.phone && o.applyDate).map(o => o.phone + '|' + o.applyDate)
+    allOrders.filter(o => o.phone && o.applyDate).map(o => o.phone + '|' + o.applyDate)
   );
   const rows = [], preview = [];
   let skipped = 0, invalid = 0;
