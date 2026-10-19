@@ -108,6 +108,44 @@ https://z1992j.github.io/Sales-order/
 
 如果第 3 步仍然能看到订单，说明 SQL 没执行成功，请回到第 2 步重来。
 
+## 数据库连不上：先分清是「暂停」还是「密码错」
+
+顶部横幅的报错原文决定该往哪儿查，别一上来就重设密码：
+
+| 报错 | 原因 | 处理 |
+|---|---|---|
+| `无法连接 Supabase：Load failed` | 请求根本没发出去，**不是密码问题** | 见下方「项目被暂停」 |
+| `Invalid login credentials` | 邮箱或密码对不上 | 按上面第 1 步重建账号，勾选 Auto Confirm User |
+| `Email not confirmed` | 账号没确认 | Users → 该账号 → Confirm email |
+| `HTTP 401 / 403` | RLS 或权限没配好 | 重新执行 `supabase/security.sql` |
+
+### 项目被暂停（最常见）
+
+Supabase 免费项目连续 7 天数据库活动太少会被自动**暂停**，暂停后项目域名
+`cgieubqhafwwprwzerty.supabase.co` 直接解析不到——页面表现就是 `Load failed`，
+同时退回离线缓存视图。这不是代码或密码的问题。
+
+恢复：
+
+1. 打开 <https://supabase.com/dashboard/project/cgieubqhafwwprwzerty>
+2. 选中被暂停的项目，点 **Resume project** 并确认
+3. 等一两分钟，刷新页面重新登录，橙色横幅应当消失
+
+数据在暂停后 **一年内** 都保留，恢复后回到原样（包括表、RLS 策略和登录账号）。
+超过一年就只能靠备份重建，见 Supabase 的 restore 文档。
+
+想彻底避免再次暂停：要么每天产生一点数据库读写，要么升级到 Pro 付费计划
+（付费项目不会被自动暂停）。
+
+### 暂停期间的数据是只读的，而且只在这一台设备上
+
+离线横幅里那份数据来自浏览器 `localStorage`，换设备、清缓存、或者点页面上的
+「退出」（`logout()` 会调 `clearCachedOrders()`）都会丢掉。所以：
+
+- **别在暂停期间点「退出」**，也不要清理浏览器数据。
+- 需要留底就立刻点「导出 CSV」，数据库恢复后再「导入 CSV」。
+- 暂停期间新增/修改/删除都会失败，别在此期间补录，否则会以为记上了。
+
 ## 修改密码
 
 密码存在两个地方，必须同时改：
