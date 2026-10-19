@@ -23,9 +23,37 @@ let dbSession = null;    // { access_token, refresh_token, expires_at }
 let dbAuthReady = false; // 数据库账号鉴权是否生效
 let dbAuthError = '';    // Supabase 返回的失败原因，原样展示给使用者
 
+// 连不上和「密码不对」是两类问题：前者要去 Supabase 后台恢复项目，
+// 后者才是改账号。混在一起提示会让人白折腾一遍密码。
+function isConnectionError(msg) {
+  const m = (msg || '').toLowerCase();
+  return m.includes('无法连接') || m.includes('load failed') || m.includes('failed to fetch') ||
+         m.includes('network') || m.includes('unreachable') ||
+         m.includes('not resolve') || m.includes('err_name_not_resolved') ||
+         m.includes('err_internet') || m.includes('timed out') || m.includes('timeout');
+}
+
+// 从项目地址取出 ref，用来拼后台直链——出问题时少让人找一层菜单
+function supabaseRef() {
+  const m = /^https?:\/\/([a-z0-9-]+)\.supabase\.co$/i.exec(SUPABASE_URL || '');
+  return m ? m[1] : '';
+}
+
+function supabaseDashboardUrl() {
+  const ref = supabaseRef();
+  return 'https://supabase.com/dashboard/project/' + (ref || '');
+}
+
 // 把 Supabase 的英文报错翻译成可以照着做的处置办法
 function authErrorHint(msg) {
   const m = (msg || '').toLowerCase();
+  if (isConnectionError(msg)) {
+    return '多半是 Supabase 项目被暂停了：免费项目连续 7 天没什么数据库活动就会自动暂停，' +
+           '暂停后项目域名直接解析不到，页面就变成「连不上」而不是「密码错」。' +
+           '处理：登录 ' + supabaseDashboardUrl() + ' → 选中项目 → 点 Resume project 恢复。' +
+           '数据在暂停后一年内都保留，恢复后回到原样。' +
+           (navigator.onLine === false ? '另外当前设备本身也不在线，先确认手机网络。' : '');
+  }
   if (m.includes('email not confirmed') || m.includes('not confirmed')) {
     return '账号没有确认。到 Authentication → Users 找到该账号，点右侧 ⋯ → Confirm email；' +
            '或删除后重建，务必勾选 Auto Confirm User。';
@@ -159,9 +187,21 @@ function enterApp() {
   document.getElementById('appRoot').classList.add('ready');
   const banner = document.getElementById('setupBanner');
   if (banner && !dbAuthReady) {
+    // 提示文案里带后台直链，需要可点；所以只对链接本身拼 HTML，
+    // 报错原文和提示正文仍走 esc()，不会被当成标签解析。
+    const connIssue = isConnectionError(dbAuthError);
+    const hint = authErrorHint(dbAuthError);
+    const linkAt = hint.indexOf(supabaseDashboardUrl());
+    let hintHtml = esc(hint);
+    if (connIssue && linkAt >= 0) {
+      const url = supabaseDashboardUrl();
+      hintHtml = esc(hint.slice(0, linkAt)) +
+        '<a href="' + escAttr(url) + '" target="_blank" rel="noopener noreferrer">' + esc(url) + '</a>' +
+        esc(hint.slice(linkAt + url.length));
+    }
     banner.innerHTML = '⚠️ <b>数据库登录失败</b>，当前仅有页面密码保护。' +
       (dbAuthError
-        ? '<br>Supabase 返回：<code>' + esc(dbAuthError) + '</code><br>处理办法：' + esc(authErrorHint(dbAuthError))
+        ? '<br>Supabase 返回：<code>' + esc(dbAuthError) + '</code><br>处理办法：' + hintHtml
         : '请按 <code>README.md</code> 创建登录账号并执行 <code>supabase/security.sql</code>。') +
       '<br>账号邮箱应为 <code>' + esc(AUTH_EMAIL) + '</code>，密码与页面登录密码相同。';
     banner.classList.add('visible');
@@ -204,7 +244,12 @@ async function submitLogin(event) {
 }
 
 function logout() {
-  if (!confirm('确认退出登录？')) return;
+  // 离线缓存是本机唯一的一份数据（数据库连不上时更是如此），
+  // 而退出会顺手清掉它——这种情况下必须先把后果说清楚。
+  const msg = usingCachedData
+    ? '当前显示的是离线缓存，退出会清掉本机唯一的一份数据，且无法再查看。\n建议先点「导出 CSV」留底。\n\n仍要退出吗？'
+    : '确认退出登录？';
+  if (!confirm(msg)) return;
   clearStoredSession();
   clearCachedOrders();   // 退出后不该在本机留下客户资料
   dbSession = null;
@@ -1184,7 +1229,9 @@ function showOfflineBanner(at, reason) {
   if (!el) return;
   el.innerHTML = '📴 <b>离线模式</b> —— 显示的是 ' + new Date(at).toLocaleString('zh-CN') +
     ' 缓存的数据，可能已不是最新。此状态下新增、修改、删除都会失败。' +
-    '<br><span style="color:#6366f1">原因：' + esc(reason || '网络不可用') + '</span>';
+    '<br><span style="color:#6366f1">原因：' + esc(reason || '网络不可用') + '</span>' +
+    '<br>这批数据只存在这台设备的浏览器里，<b>别点「退出」</b>（退出会清掉它）。' +
+    '需要保全的话现在点「导出 CSV」存一份，恢复数据库后再「导入 CSV」。';
   el.classList.add('visible');
 }
 
